@@ -1,0 +1,9 @@
+[submodule "deps/bullet3"]
+	path = deps/bullet3
+	url = https://github.com/bulletphysics/bullet3.git
+[submodule "deps/eigen3"]
+	path = deps/eigen3
+	url = https://github.com/eigenteam/eigen-git-mirror
+[submodule "deps/freeglut"]
+	path = deps/freeglut
+	url = https://github.com/dcnieho/FreeGLUT
