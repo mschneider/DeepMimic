@@ -17,7 +17,7 @@
     <CommandLineArguments>--arg_file args/run_humanoid3d_spinkick_args.txt</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
     <IsWindowsApplication>False</IsWindowsApplication>
-    <InterpreterId>Global|PythonCore|3.5</InterpreterId>
+    <InterpreterId>CondaEnv|CondaEnv|deep_mimic</InterpreterId>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -65,7 +65,7 @@
     <Folder Include="util\" />
   </ItemGroup>
   <ItemGroup>
-    <InterpreterReference Include="Global|PythonCore|3.5" />
+    <InterpreterReference Include="CondaEnv|CondaEnv|deep_mimic" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
