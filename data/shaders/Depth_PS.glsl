@@ -1,4 +1,5 @@
-#version 130
+#version 330 core
+
 
 in		vec3	WorldPosition;
 out 	vec4 	outColor;

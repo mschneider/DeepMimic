@@ -266,11 +266,11 @@ def mouse_move(x, y):
 def init_draw():
     glutInit()  
     
-    glutInitContextVersion(3, 2)
-    glutInitContextFlags(GLUT_FORWARD_COMPATIBLE)
-    glutInitContextProfile(GLUT_CORE_PROFILE)
+    # glutInitContextVersion(3, 2)
+    # glutInitContextFlags(GLUT_FORWARD_COMPATIBLE)
+    # glutInitContextProfile(GLUT_CORE_PROFILE)
 
-    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH)
+    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH | GLUT_3_2_CORE_PROFILE)
     glutInitWindowSize(win_width, win_height)
     glutCreateWindow(b'DeepMimic')
     return

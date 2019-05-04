@@ -1,4 +1,5 @@
-#version 130
+#version 330 core
+
 
 uniform sampler2D gBufferTex;
 in vec2 TexCoord;

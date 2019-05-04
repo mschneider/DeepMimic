@@ -2,7 +2,8 @@
 
 #include <stdlib.h>
 #include <GL/glew.h>
-#include <GL/freeglut.h>
+#include <GLUT/glut.h>
+
 #include <fstream>
 
 #include "util/MathUtil.h"

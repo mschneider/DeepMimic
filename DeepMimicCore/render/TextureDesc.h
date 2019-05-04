@@ -3,7 +3,7 @@
 #include <vector>
 #include <stack>
 #include <GL/glew.h>
-#include <GL/freeglut.h>
+#include <GLUT/glut.h>
 
 #include "TextureUtil.h"
 

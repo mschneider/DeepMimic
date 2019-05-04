@@ -2,17 +2,17 @@ BIN=Main
 OBJ_DIR = objs
 MKDIR = mkdir -p
 
-EIGEN_DIR = ../../libraries/eigen
-BULLET_INC_DIR = ../../libraries/bullet3/src
+EIGEN_DIR = /usr/local/Cellar/eigen/3.3.7/include/eigen3
+BULLET_INC_DIR = /usr/local/Cellar/bullet/2.88/include/bullet
 
-PYTHON_INC = /usr/include/python3.6m
-PYTHON_LIB = /usr/lib/ -lpython3.6m
+PYTHON_INC = /usr/local/opt/python/Frameworks/Python.framework/Versions/3.7/include/python3.7m
+PYTHON_LIB = /usr/local/opt/python/Frameworks/Python.framework/Versions/3.7/lib -lpython3.7m
 
 INC = -I./ \
 	-I$(EIGEN_DIR) \
 	-I$(BULLET_INC_DIR)
 
-LIBS = -lGLEW -lGL -lGLU -lglut -lBulletDynamics -lBulletCollision -lLinearMath -lm -lstdc++
+LIBS = -framework OpenGL -framework GLUT -lGLEW -lBulletDynamics -lBulletCollision -lLinearMath -lm -lstdc++
 
 CC = clang++
 CFLAGS = -std=c++11 -O3 -Wall -fPIC 
@@ -28,7 +28,7 @@ SRC_DIRS = util/ \
 	scenes/particle/ \
 	scenes/pendulum/
 
-SRC_FILES = $(BIN).cpp DeepMimicCore.cpp $(foreach dir, $(SRC_DIRS), $(wildcard $(dir)*.cpp))
+SRC_FILES = DeepMimicCore.cpp $(foreach dir, $(SRC_DIRS), $(wildcard $(dir)*.cpp))
 OUT_DIRS = $(addprefix $(OBJ_DIR)/, $(SRC_DIRS))
 OBJ = $(addprefix $(OBJ_DIR)/, $(patsubst %.cpp, %.o, $(SRC_FILES)))
 

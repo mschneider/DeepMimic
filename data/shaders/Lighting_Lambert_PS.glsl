@@ -1,4 +1,5 @@
-#version 130
+#version 330 core
+
 
 uniform		sampler2D	gTexture;
 uniform		sampler2D	gShadowTex;
