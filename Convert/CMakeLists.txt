@@ -29,12 +29,13 @@ if (WIN32)
    set(BULLET_INCLUDE_DIRS "${BULLET_ROOT_WIN32}/src;${BULLET_ROOT_WIN32}/Extras/Serialize")
    set(BULLET_LIBRARIES ${BULLET_LIBRARIES_WIN32_DEBUG})
 
-else()
+endif()
+
+if (APPLE)
 
    find_package(BULLET)
 
-   set(BULLET_EXTRA_LIBS_APPLE_RELEASE
-      "/usr/local/lib/libBulletWorldImporter.dylib")
+   set(BULLET_EXTRA_LIBS_APPLE_RELEASE "/usr/local/lib/libBulletWorldImporter.dylib")
 
    set(BULLET_LIBRARIES "${BULLET_LIBRARIES};${BULLET_EXTRA_LIBS_APPLE_RELEASE}")
 
