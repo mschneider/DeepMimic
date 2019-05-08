@@ -33,11 +33,15 @@ endif()
 
 if (APPLE)
 
-   find_package(BULLET)
+   find_package(BULLET REQUIRED)
 
    set(BULLET_EXTRA_LIBS_APPLE_RELEASE "/usr/local/lib/libBulletWorldImporter.dylib")
 
    set(BULLET_LIBRARIES "${BULLET_LIBRARIES};${BULLET_EXTRA_LIBS_APPLE_RELEASE}")
+
+   find_package(jsoncpp REQUIRED)
+
+   get_target_property(JSONCPP_INCLUDE_DIRS jsoncpp_lib INTERFACE_INCLUDE_DIRECTORIES)
 
 endif()
 
@@ -47,10 +51,16 @@ TARGET_include_directories(${TARGET}
     PRIVATE
     ${DEFAULT_INCLUDE_DIRECTORIES}
     ${BULLET_INCLUDE_DIRS}
+    ${JSONCPP_INCLUDE_DIRS}
 )
 
 TARGET_link_libraries(${TARGET}
     PRIVATE
     ${DEFAULT_LIBRARIES}
     ${BULLET_LIBRARIES}
+    jsoncpp_lib
 )
+
+set_target_properties(${TARGET} PROPERTIES
+    CXX_STANDARD 17
+    CXX_EXTENSIONS OFF)
