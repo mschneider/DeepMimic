@@ -10,7 +10,7 @@ add_executable(${TARGET} ${SOURCES})
 
 if (WIN32)
 
-  set(BULLET_ROOT_WIN32 "C:/Users/Hadas/Desktop/DeepMimic/deps/bullet3")
+  set(BULLET_ROOT_WIN32 "C:/Users/nikita/Desktop/DeepMimic/deps/bullet3")
 
   set(BULLET_LIBRARIES_WIN32_DEBUG
       "${BULLET_ROOT_WIN32}/bin/BulletCollision_vs2010_x64_debug.lib"
@@ -29,6 +29,11 @@ if (WIN32)
    set(BULLET_INCLUDE_DIRS "${BULLET_ROOT_WIN32}/src;${BULLET_ROOT_WIN32}/Extras/Serialize")
    set(BULLET_LIBRARIES ${BULLET_LIBRARIES_WIN32_DEBUG})
 
+   set(JSONCPP_ROOT_WIN32 "C:/Users/nikita/Desktop/DeepMimic/deps/jsoncpp")
+
+   set(JSONCPP_INCLUDE_DIRS "${JSONCPP_ROOT_WIN32}/include")
+   set(JSONCPP_LIBRARIES "${JSONCPP_ROOT_WIN32}/build/lib_json/Debug/jsoncpp.lib")
+
 endif()
 
 if (APPLE)
@@ -42,6 +47,8 @@ if (APPLE)
    find_package(jsoncpp REQUIRED)
 
    get_target_property(JSONCPP_INCLUDE_DIRS jsoncpp_lib INTERFACE_INCLUDE_DIRECTORIES)
+
+   set(JSONCPP_LIBRARIES jsonccp_lib)
 
 endif()
 
@@ -58,7 +65,7 @@ TARGET_link_libraries(${TARGET}
     PRIVATE
     ${DEFAULT_LIBRARIES}
     ${BULLET_LIBRARIES}
-    jsoncpp_lib
+    ${JSONCPP_LIBRARIES}
 )
 
 set_target_properties(${TARGET} PROPERTIES
