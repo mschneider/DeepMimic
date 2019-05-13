@@ -44,7 +44,7 @@ std::string rigidBodyNames[] = {
   "left_ankle",
   "left_shoulder",
   "left_elbow",
-  "left_writst"
+  "left_wrist"
 };
 
 std::string constraintNames[] = {
@@ -61,8 +61,15 @@ std::string constraintNames[] = {
   "left_ankle",
   "left_shoulder",
   "left_elbow",
-  "left_writst"
+  "left_wrist"
 };
+
+template<typename key_t, typename val_t>
+bool hasKey(const std::map<key_t,val_t> & m, key_t key)
+{
+  auto it = m.find(key);
+  return it != m.end();
+}
 
 class OutputBuilder
 {
@@ -78,6 +85,8 @@ private:
   Json::Value buildJoint(int i);
   Json::Value buildBodyDefs();
   Json::Value buildBodyDef(int i);
+  Json::Value buildDrawShapeDefs();
+  Json::Value buildDrawShapeDef(int i);
 };
 
 OutputBuilder::OutputBuilder(const index_t & index, const Json::Value & preset)
@@ -91,6 +100,7 @@ Json::Value OutputBuilder::build()
   Json::Value output;
   output["Skeleton"]["Joints"] = buildJoints();
   output["BodyDefs"] = buildBodyDefs();
+  output["DrawShapeDefs"] = buildDrawShapeDefs();
   return output;
 }
 
@@ -115,13 +125,43 @@ Json::Value OutputBuilder::buildJoint(int i)
     auto constraintName = constraintNames[i-1];
     auto jointName = joint["Name"].asString();
 
-    std::cout << "Mapping " << constraintName << " to " << jointName << std::endl;
+    std::cout << "Mapping Constraint " << constraintName << " to " << jointName << " found? " << hasKey(index.constraints, constraintName) << std::endl;
 
     auto constraint = index.constraints.at(constraintName);
-    // TODO: apply constraint properties to joint JSON
-    //
 
+    if (constraint->getConstraintType() == 4)
+    {
+      auto hinge = (btHingeConstraint*)constraint;
+      auto offsetA = hinge->getFrameOffsetA();
+      auto offsetB = hinge->getFrameOffsetB();
+      auto attach = offsetB.getOrigin() - offsetA.getOrigin();
+
+      joint["AttachX"] = attach.x();
+      joint["AttachY"] = attach.y();
+      joint["AttachZ"] = attach.z();
+    }
+
+    if (constraint->getConstraintType() == 5)
+    {
+      auto coneTwist = (btConeTwistConstraint*)constraint;
+      auto offsetA = coneTwist->getFrameOffsetA();
+      auto offsetB = coneTwist->getFrameOffsetB();
+      auto attach = offsetB.getOrigin() - offsetA.getOrigin();
+
+      joint["AttachX"] = attach.x();
+      joint["AttachY"] = attach.y();
+      joint["AttachZ"] = attach.z();
+    }
+/*
+    if (jointName == "right_ankle" || jointName == "left_ankle")
+    {
+      joint["AttachX"] = preset["Skeleton"]["Joints"][i]["AttachX"];
+      joint["AttachY"] = preset["Skeleton"]["Joints"][i]["AttachY"];
+      joint["AttachZ"] = preset["Skeleton"]["Joints"][i]["AttachZ"];
+    }
+    */
   }
+
 
   return joint;
 }
@@ -142,20 +182,24 @@ Json::Value OutputBuilder::buildBodyDef(int i)
 {
   Json::Value bodyDef = preset["BodyDefs"][i];
 
-  if (i <= 2)
+  if (true)
   {
     auto rigidBodyName = rigidBodyNames[i];
     auto bodyDefName = bodyDef["Name"].asString();
 
-    std::cout << "Mapping " << rigidBodyName << " to " << bodyDefName << std::endl;
+    std::cout << "Mapping Rigid Body " << rigidBodyName << " to " << bodyDefName << " found? " << hasKey(index.rigidBodies, rigidBodyName) << std::endl;
 
     auto rigidBody = index.rigidBodies.at(rigidBodyName);
-
     auto collision = rigidBody->getCollisionShape();
+
+    //bodyDef["AttachX"] = 0.0;
+    //bodyDef["AttachY"] = 0.0;
+    //bodyDef["AttachZ"] = 0.0;
 
     if (collision)
     {
       auto type = collision->getShapeType();
+      auto margin = collision->getMargin();
       auto scaling = collision->getLocalScaling();
 
       if (type == BOX_SHAPE_PROXYTYPE)
@@ -164,9 +208,9 @@ Json::Value OutputBuilder::buildBodyDef(int i)
         auto shapeDims = box->getImplicitShapeDimensions();
 
         bodyDef["Shape"] = "box";
-        bodyDef["Param0"] = shapeDims.x();
-        bodyDef["Param1"] = shapeDims.y();
-        bodyDef["Param2"] = shapeDims.z();
+        bodyDef["Param0"] = (margin + shapeDims.x()) * 2;
+        bodyDef["Param1"] = (margin + shapeDims.y()) * 2;
+        bodyDef["Param2"] = (margin + shapeDims.z()) * 2;
       }
 
       if (type == SPHERE_SHAPE_PROXYTYPE)
@@ -189,6 +233,75 @@ Json::Value OutputBuilder::buildBodyDef(int i)
 
   return bodyDef;
 }
+
+Json::Value OutputBuilder::buildDrawShapeDefs()
+{
+  Json::Value skeleton;
+
+  for (int i = 0; i < std::size(rigidBodyNames); ++i)
+  {
+    skeleton[i] = buildDrawShapeDef(i);
+  }
+
+  return skeleton;
+}
+
+Json::Value OutputBuilder::buildDrawShapeDef(int i)
+{
+  Json::Value bodyDef = preset["DrawShapeDefs"][i];
+
+  if (true)
+  {
+    auto rigidBodyName = rigidBodyNames[i];
+    auto bodyDefName = bodyDef["Name"].asString();
+
+    std::cout << "Mapping Rigid Body" << rigidBodyName << " to " << bodyDefName << " found? " << hasKey(index.rigidBodies, rigidBodyName) << std::endl;
+
+    auto rigidBody = index.rigidBodies.at(rigidBodyName);
+    auto collision = rigidBody->getCollisionShape();
+
+    //bodyDef["AttachX"] = 0.0;
+    //bodyDef["AttachY"] = 0.0;
+    //bodyDef["AttachZ"] = 0.0;
+    
+    if (collision)
+    {
+      auto type = collision->getShapeType();
+      auto margin = collision->getMargin();
+      auto scaling = collision->getLocalScaling();
+
+      if (type == BOX_SHAPE_PROXYTYPE)
+      {
+        auto box = (btBoxShape*) collision;
+        auto shapeDims = box->getImplicitShapeDimensions();
+
+        bodyDef["Shape"] = "box";
+        bodyDef["Param0"] = (margin + shapeDims.x()) * 2;
+        bodyDef["Param1"] = (margin + shapeDims.y()) * 2;
+        bodyDef["Param2"] = (margin + shapeDims.z()) * 2;
+      }
+
+      if (type == SPHERE_SHAPE_PROXYTYPE)
+      {
+        auto sphere = (btSphereShape*) collision;
+        auto radius = sphere->getRadius();
+
+        bodyDef["Shape"] = "sphere";
+        bodyDef["Param0"] = radius;
+        bodyDef["Param1"] = radius;
+        bodyDef["Param2"] = radius;
+      }
+    }
+    else
+    {
+      std::cout << "Could not find a collision shape for rigid body " << rigidBodyName << std::endl;
+    }
+
+  }
+
+  return bodyDef;
+}
+
 
 std::string stringify(const btVector3 & v)
 {
@@ -283,6 +396,10 @@ int main(int argc, const char** argv)
 
         std::cout << "    type: " << type << std::endl;
 
+        auto margin = collision->getMargin();
+
+        std::cout << "    margin: " << margin << std::endl;
+
         auto scaling = collision->getLocalScaling();
 
         std::cout << "    scaling: " << stringify(scaling) << std::endl;
@@ -337,6 +454,8 @@ int main(int argc, const char** argv)
       auto offsetB = hinge->getFrameOffsetB();
       std::cout << "  offsetB: " << stringify(offsetB.getOrigin()) << std::endl;
 
+      auto attach = offsetB.getOrigin() - offsetA.getOrigin();
+      std::cout << "  attach: " << stringify(attach) << std::endl;
     }
 
     if (constraint->getConstraintType() == 5)
@@ -349,6 +468,8 @@ int main(int argc, const char** argv)
       auto offsetB = coneTwist->getFrameOffsetB();
       std::cout << "  offsetB: " << stringify(offsetB.getOrigin()) << std::endl;
 
+      auto attach = offsetB.getOrigin() - offsetA.getOrigin();
+      std::cout << "  attach: " << stringify(attach) << std::endl;
     }
 
     std::cout << std::endl;
