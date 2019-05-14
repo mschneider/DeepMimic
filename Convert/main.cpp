@@ -172,8 +172,8 @@ Json::Value OutputBuilder::buildJoint(int i)
       joint["AttachZ"] = offsetB.z();
     }
 
-    auto rbA = constraint->getRigidBodyA();
-    auto rbB = constraint->getRigidBodyB();
+    auto & rbA = constraint->getRigidBodyA();
+    auto & rbB = constraint->getRigidBodyB();
 
     std::cout << "CenterOfMass[A] " << stringify(rbA.getCenterOfMassPosition()) << std::endl;
     std::cout << "CenterOfMass[B] " << stringify(rbB.getCenterOfMassPosition()) << std::endl;
@@ -575,8 +575,8 @@ int main(int argc, const char** argv)
       std::cout << "  offsetB: " << stringify(offsetB.getOrigin()) << std::endl;
     }
 
-    auto rbA = constraint->getRigidBodyA();
-    auto rbB = constraint->getRigidBodyB();
+    auto & rbA = constraint->getRigidBodyA();
+    auto & rbB = constraint->getRigidBodyB();
 
     std::cout << "  centerA " << stringify(rbA.getCenterOfMassPosition()) << std::endl;
     std::cout << "  centerB " << stringify(rbB.getCenterOfMassPosition()) << std::endl;
