@@ -48,6 +48,7 @@ std::string rigidBodyNames[] = {
 };
 
 std::string constraintNames[] = {
+  "root",
   "chest",
   "neck",
   "right_hip",
@@ -63,6 +64,28 @@ std::string constraintNames[] = {
   "left_elbow",
   "left_wrist"
 };
+
+std::string stringify(const btQuaternion & q)
+{
+  btScalar x,y,z;
+  q.getEulerZYX(z, y, x);
+  std::stringstream ss;
+  ss << "(" << x << ", " << y << ", " << z << ")";
+  return ss.str();
+
+}
+
+std::string stringify(const btVector3 & v)
+{
+  std::stringstream ss;
+  ss << "(" << v.getX() << ", " << v.getY() << ", " << v.getZ() << ")";
+  return ss.str();
+}
+
+std::string extractSuffix(const std::string & s)
+{
+  return s.substr(s.rfind(":") + 1);
+}
 
 template<typename key_t, typename val_t>
 bool hasKey(const std::map<key_t,val_t> & m, key_t key)
@@ -108,7 +131,7 @@ Json::Value OutputBuilder::buildJoints()
 {
   Json::Value skeleton;
 
-  for (int i = 0; i <= std::size(constraintNames); ++i)
+  for (int i = 0; i < std::size(constraintNames); ++i)
   {
     skeleton[i] = buildJoint(i);
   }
@@ -120,9 +143,9 @@ Json::Value OutputBuilder::buildJoint(int i)
 {
   Json::Value joint = preset["Skeleton"]["Joints"][i];
 
-  if (i == 1 || i == 2)
+  if (i > 0)
   {
-    auto constraintName = constraintNames[i-1];
+    auto constraintName = constraintNames[i];
     auto jointName = joint["Name"].asString();
 
     std::cout << "Mapping Constraint " << constraintName << " to " << jointName << " found? " << hasKey(index.constraints, constraintName) << std::endl;
@@ -132,36 +155,67 @@ Json::Value OutputBuilder::buildJoint(int i)
     if (constraint->getConstraintType() == 4)
     {
       auto hinge = (btHingeConstraint*)constraint;
-      auto offsetA = hinge->getFrameOffsetA();
-      auto offsetB = hinge->getFrameOffsetB();
-      auto attach = offsetB.getOrigin() - offsetA.getOrigin();
+      auto offsetA = hinge->getFrameOffsetA().getOrigin();
 
-      joint["AttachX"] = attach.x();
-      joint["AttachY"] = attach.y();
-      joint["AttachZ"] = attach.z();
+      joint["AttachX"] = offsetA.x();
+      joint["AttachY"] = offsetA.y();
+      joint["AttachZ"] = offsetA.z();
     }
 
     if (constraint->getConstraintType() == 5)
     {
       auto coneTwist = (btConeTwistConstraint*)constraint;
-      auto offsetA = coneTwist->getFrameOffsetA();
-      auto offsetB = coneTwist->getFrameOffsetB();
-      auto attach = offsetB.getOrigin() - offsetA.getOrigin();
+      auto offsetB = coneTwist->getFrameOffsetB().getOrigin();
 
-      joint["AttachX"] = attach.x();
-      joint["AttachY"] = attach.y();
-      joint["AttachZ"] = attach.z();
+      joint["AttachX"] = offsetB.x();
+      joint["AttachY"] = offsetB.y();
+      joint["AttachZ"] = offsetB.z();
     }
-/*
-    if (jointName == "right_ankle" || jointName == "left_ankle")
+
+    auto rbA = constraint->getRigidBodyA();
+    auto rbB = constraint->getRigidBodyB();
+
+    std::cout << "CenterOfMass[A] " << stringify(rbA.getCenterOfMassPosition()) << std::endl;
+    std::cout << "CenterOfMass[B] " << stringify(rbB.getCenterOfMassPosition()) << std::endl;
+
+    auto parentJointID = joint["Parent"].asInt();
+
+    if (parentJointID == 0)
     {
-      joint["AttachX"] = preset["Skeleton"]["Joints"][i]["AttachX"];
-      joint["AttachY"] = preset["Skeleton"]["Joints"][i]["AttachY"];
-      joint["AttachZ"] = preset["Skeleton"]["Joints"][i]["AttachZ"];
-    }
-    */
-  }
+      auto parentRigidBody = index.rigidBodies.at("root");
+      auto rootBodyOffset = parentRigidBody->getWorldTransform().getOrigin();
 
+      joint["AttachX"] = joint["AttachX"].asFloat() + rootBodyOffset.x();
+      joint["AttachY"] = joint["AttachY"].asFloat() + rootBodyOffset.y();
+      joint["AttachZ"] = joint["AttachZ"].asFloat() + rootBodyOffset.z();
+    }
+
+    if (parentJointID > 0)
+    {
+      auto parentJointName = constraintNames[parentJointID];
+      auto parentConstraint = index.constraints.at(parentJointName);
+
+      if (parentConstraint->getConstraintType() == 4)
+      {
+        auto hinge = (btHingeConstraint*)parentConstraint;
+        auto offsetB = hinge->getFrameOffsetB().getOrigin();
+
+        joint["AttachX"] = joint["AttachX"].asFloat() - offsetB.x();
+        joint["AttachY"] = joint["AttachY"].asFloat() - offsetB.y();
+        joint["AttachZ"] = joint["AttachZ"].asFloat() - offsetB.z();
+      }
+
+      if (parentConstraint->getConstraintType() == 5)
+      {
+        auto coneTwist = (btConeTwistConstraint*)parentConstraint;
+        auto offsetA = coneTwist->getFrameOffsetA().getOrigin();
+
+        joint["AttachX"] = joint["AttachX"].asFloat() - offsetA.x();
+        joint["AttachY"] = joint["AttachY"].asFloat() - offsetA.y();
+        joint["AttachZ"] = joint["AttachZ"].asFloat() - offsetA.z();
+      }
+    }
+  }
 
   return joint;
 }
@@ -191,10 +245,6 @@ Json::Value OutputBuilder::buildBodyDef(int i)
 
     auto rigidBody = index.rigidBodies.at(rigidBodyName);
     auto collision = rigidBody->getCollisionShape();
-
-    //bodyDef["AttachX"] = 0.0;
-    //bodyDef["AttachY"] = 0.0;
-    //bodyDef["AttachZ"] = 0.0;
 
     if (collision)
     {
@@ -227,6 +277,43 @@ Json::Value OutputBuilder::buildBodyDef(int i)
     else
     {
       std::cout << "Could not find a collision shape for rigid body " << rigidBodyName << std::endl;
+      return bodyDef;
+    }
+
+
+    if (hasKey(index.constraints, rigidBodyName))
+    {
+      auto constraint = index.constraints.at(rigidBodyName);
+
+      std::cout << "Using parent constraint " << rigidBodyName << " for positioning" << std::endl;
+
+      if (constraint->getConstraintType() == 4)
+      {
+        auto hinge = (btHingeConstraint*)constraint;
+        auto offsetB = hinge->getFrameOffsetB().getOrigin();
+
+        /*
+        bodyDef["AttachX"] = offsetB.x();
+        bodyDef["AttachY"] = offsetB.y();
+        bodyDef["AttachZ"] = offsetB.z();
+        */
+      }
+
+      if (constraint->getConstraintType() == 5)
+      {
+        auto coneTwist = (btConeTwistConstraint*)constraint;
+        auto offsetA = coneTwist->getFrameOffsetA().getOrigin();
+
+        /*
+        bodyDef["AttachX"] = -offsetA.x();
+        bodyDef["AttachY"] = -offsetA.y();
+        bodyDef["AttachZ"] = -offsetA.z();
+        */
+      }
+    }
+    else
+    {
+      std::cout << "Could not find a parent constraint for rigid body " << rigidBodyName << std::endl;
     }
 
   }
@@ -260,10 +347,6 @@ Json::Value OutputBuilder::buildDrawShapeDef(int i)
     auto rigidBody = index.rigidBodies.at(rigidBodyName);
     auto collision = rigidBody->getCollisionShape();
 
-    //bodyDef["AttachX"] = 0.0;
-    //bodyDef["AttachY"] = 0.0;
-    //bodyDef["AttachZ"] = 0.0;
-    
     if (collision)
     {
       auto type = collision->getShapeType();
@@ -287,14 +370,49 @@ Json::Value OutputBuilder::buildDrawShapeDef(int i)
         auto radius = sphere->getRadius();
 
         bodyDef["Shape"] = "sphere";
-        bodyDef["Param0"] = radius;
-        bodyDef["Param1"] = radius;
-        bodyDef["Param2"] = radius;
+        bodyDef["Param0"] = radius * 2;
+        bodyDef["Param1"] = radius * 2;
+        bodyDef["Param2"] = radius * 2;
       }
     }
     else
     {
       std::cout << "Could not find a collision shape for rigid body " << rigidBodyName << std::endl;
+      return bodyDef;
+    }
+
+
+    if (hasKey(index.constraints, rigidBodyName))
+    {
+      auto constraint = index.constraints.at(rigidBodyName);
+
+      std::cout << "Using parent constraint " << rigidBodyName << " for positioning" << std::endl;
+
+      if (constraint->getConstraintType() == 4)
+      {
+        auto hinge = (btHingeConstraint*)constraint;
+        auto offsetB = hinge->getFrameOffsetB().getOrigin();
+
+        bodyDef["AttachX"] = -offsetB.x();
+        bodyDef["AttachY"] = -offsetB.y();
+        bodyDef["AttachZ"] = -offsetB.z();
+      }
+
+      if (constraint->getConstraintType() == 5)
+      {
+        auto coneTwist = (btConeTwistConstraint*)constraint;
+        auto offsetA = coneTwist->getFrameOffsetA().getOrigin();
+
+        bodyDef["AttachX"] = -offsetA.x();
+        bodyDef["AttachY"] = -offsetA.y();
+        bodyDef["AttachZ"] = -offsetA.z();
+      }
+
+      //bodyDef["AttachX"] = bodyDef["AttachY"] = bodyDef["AttachZ"] = 0.0;
+    }
+    else
+    {
+      std::cout << "Could not find a parent constraint for rigid body " << rigidBodyName << std::endl;
     }
 
   }
@@ -302,18 +420,6 @@ Json::Value OutputBuilder::buildDrawShapeDef(int i)
   return bodyDef;
 }
 
-
-std::string stringify(const btVector3 & v)
-{
-  std::stringstream ss;
-  ss << "(" << v.getX() << ", " << v.getY() << ", " << v.getZ() << ")";
-  return ss.str();
-}
-
-std::string extractSuffix(const std::string & s)
-{
-  return s.substr(s.rfind(":") + 1);
-}
 
 int main(int argc, const char** argv)
 {
@@ -404,6 +510,11 @@ int main(int argc, const char** argv)
 
         std::cout << "    scaling: " << stringify(scaling) << std::endl;
 
+        auto worldT = body->getWorldTransform();
+
+        std::cout << "    position: " << stringify(worldT.getOrigin()) << std::endl;
+        std::cout << "    rotation: " << stringify(worldT.getRotation()) << std::endl;
+
 
         if (type == BOX_SHAPE_PROXYTYPE)
         {
@@ -449,13 +560,9 @@ int main(int argc, const char** argv)
       std::cout << "  upper limit: " << hinge->getUpperLimit() << std::endl;
 
       auto offsetA = hinge->getFrameOffsetA();
-      std::cout << "  offsetA: " << stringify(offsetA.getOrigin()) << " [offset -> attach]" << std::endl;
-
       auto offsetB = hinge->getFrameOffsetB();
+      std::cout << "  offsetA: " << stringify(offsetA.getOrigin()) << std::endl;
       std::cout << "  offsetB: " << stringify(offsetB.getOrigin()) << std::endl;
-
-      auto attach = offsetB.getOrigin() - offsetA.getOrigin();
-      std::cout << "  attach: " << stringify(attach) << std::endl;
     }
 
     if (constraint->getConstraintType() == 5)
@@ -463,14 +570,17 @@ int main(int argc, const char** argv)
       auto coneTwist = (btConeTwistConstraint*)constraint;
 
       auto offsetA = coneTwist->getFrameOffsetA();
-      std::cout << "  offsetA: " << stringify(offsetA.getOrigin()) << " [offset -> attach]" << std::endl;
-
       auto offsetB = coneTwist->getFrameOffsetB();
+      std::cout << "  offsetA: " << stringify(offsetA.getOrigin()) << std::endl;
       std::cout << "  offsetB: " << stringify(offsetB.getOrigin()) << std::endl;
-
-      auto attach = offsetB.getOrigin() - offsetA.getOrigin();
-      std::cout << "  attach: " << stringify(attach) << std::endl;
     }
+
+    auto rbA = constraint->getRigidBodyA();
+    auto rbB = constraint->getRigidBodyB();
+
+    std::cout << "  centerA " << stringify(rbA.getCenterOfMassPosition()) << std::endl;
+    std::cout << "  centerB " << stringify(rbB.getCenterOfMassPosition()) << std::endl;
+
 
     std::cout << std::endl;
   }
