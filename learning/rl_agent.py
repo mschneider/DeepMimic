@@ -461,6 +461,8 @@ class RLAgent(ABC):
             if not os.path.exists(output_dir):
                 os.makedirs(output_dir)
             self.save_model(output_path)
+            if (self.iter % (self.output_iters * 5) == 0):
+                self.save_model("%s.%i" % (output_path, self.iter))
 
         if (self._enable_int_output() and self.iter % self.int_output_iters == 0):
             int_output_path = self._get_int_output_path()
