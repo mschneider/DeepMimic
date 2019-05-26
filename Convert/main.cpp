@@ -110,6 +110,7 @@ private:
   Json::Value buildBodyDef(int i);
   Json::Value buildDrawShapeDefs();
   Json::Value buildDrawShapeDef(int i);
+  void buildRigidBodyDef(int i, Json::Value & def);
 };
 
 OutputBuilder::OutputBuilder(const index_t & index, const Json::Value & preset)
@@ -238,84 +239,7 @@ Json::Value OutputBuilder::buildBodyDef(int i)
 
   if (true)
   {
-    auto rigidBodyName = rigidBodyNames[i];
-    auto bodyDefName = bodyDef["Name"].asString();
-
-    std::cout << "Mapping Rigid Body " << rigidBodyName << " to " << bodyDefName << " found? " << hasKey(index.rigidBodies, rigidBodyName) << std::endl;
-
-    auto rigidBody = index.rigidBodies.at(rigidBodyName);
-    auto collision = rigidBody->getCollisionShape();
-
-    if (collision)
-    {
-      auto type = collision->getShapeType();
-      auto margin = collision->getMargin();
-      auto scaling = collision->getLocalScaling();
-
-      if (type == BOX_SHAPE_PROXYTYPE)
-      {
-        auto box = (btBoxShape*) collision;
-        auto shapeDims = box->getImplicitShapeDimensions();
-
-        bodyDef["Shape"] = "box";
-        bodyDef["Param0"] = (margin + shapeDims.x()) * 2;
-        bodyDef["Param1"] = (margin + shapeDims.y()) * 2;
-        bodyDef["Param2"] = (margin + shapeDims.z()) * 2;
-      }
-
-      if (type == SPHERE_SHAPE_PROXYTYPE)
-      {
-        auto sphere = (btSphereShape*) collision;
-        auto radius = sphere->getRadius();
-
-        bodyDef["Shape"] = "sphere";
-        bodyDef["Param0"] = radius;
-        bodyDef["Param1"] = radius;
-        bodyDef["Param2"] = radius;
-      }
-    }
-    else
-    {
-      std::cout << "Could not find a collision shape for rigid body " << rigidBodyName << std::endl;
-      return bodyDef;
-    }
-
-
-    if (hasKey(index.constraints, rigidBodyName))
-    {
-      auto constraint = index.constraints.at(rigidBodyName);
-
-      std::cout << "Using parent constraint " << rigidBodyName << " for positioning" << std::endl;
-
-      if (constraint->getConstraintType() == 4)
-      {
-        auto hinge = (btHingeConstraint*)constraint;
-        auto offsetB = hinge->getFrameOffsetB().getOrigin();
-
-        /*
-        bodyDef["AttachX"] = offsetB.x();
-        bodyDef["AttachY"] = offsetB.y();
-        bodyDef["AttachZ"] = offsetB.z();
-        */
-      }
-
-      if (constraint->getConstraintType() == 5)
-      {
-        auto coneTwist = (btConeTwistConstraint*)constraint;
-        auto offsetA = coneTwist->getFrameOffsetA().getOrigin();
-
-        /*
-        bodyDef["AttachX"] = -offsetA.x();
-        bodyDef["AttachY"] = -offsetA.y();
-        bodyDef["AttachZ"] = -offsetA.z();
-        */
-      }
-    }
-    else
-    {
-      std::cout << "Could not find a parent constraint for rigid body " << rigidBodyName << std::endl;
-    }
-
+    buildRigidBodyDef(i, bodyDef);
   }
 
   return bodyDef;
@@ -339,85 +263,98 @@ Json::Value OutputBuilder::buildDrawShapeDef(int i)
 
   if (true)
   {
-    auto rigidBodyName = rigidBodyNames[i];
-    auto bodyDefName = bodyDef["Name"].asString();
-
-    std::cout << "Mapping Rigid Body" << rigidBodyName << " to " << bodyDefName << " found? " << hasKey(index.rigidBodies, rigidBodyName) << std::endl;
-
-    auto rigidBody = index.rigidBodies.at(rigidBodyName);
-    auto collision = rigidBody->getCollisionShape();
-
-    if (collision)
-    {
-      auto type = collision->getShapeType();
-      auto margin = collision->getMargin();
-      auto scaling = collision->getLocalScaling();
-
-      if (type == BOX_SHAPE_PROXYTYPE)
-      {
-        auto box = (btBoxShape*) collision;
-        auto shapeDims = box->getImplicitShapeDimensions();
-
-        bodyDef["Shape"] = "box";
-        bodyDef["Param0"] = (margin + shapeDims.x()) * 2;
-        bodyDef["Param1"] = (margin + shapeDims.y()) * 2;
-        bodyDef["Param2"] = (margin + shapeDims.z()) * 2;
-      }
-
-      if (type == SPHERE_SHAPE_PROXYTYPE)
-      {
-        auto sphere = (btSphereShape*) collision;
-        auto radius = sphere->getRadius();
-
-        bodyDef["Shape"] = "sphere";
-        bodyDef["Param0"] = radius * 2;
-        bodyDef["Param1"] = radius * 2;
-        bodyDef["Param2"] = radius * 2;
-      }
-    }
-    else
-    {
-      std::cout << "Could not find a collision shape for rigid body " << rigidBodyName << std::endl;
-      return bodyDef;
-    }
-
-
-    if (hasKey(index.constraints, rigidBodyName))
-    {
-      auto constraint = index.constraints.at(rigidBodyName);
-
-      std::cout << "Using parent constraint " << rigidBodyName << " for positioning" << std::endl;
-
-      if (constraint->getConstraintType() == 4)
-      {
-        auto hinge = (btHingeConstraint*)constraint;
-        auto offsetB = hinge->getFrameOffsetB().getOrigin();
-
-        bodyDef["AttachX"] = -offsetB.x();
-        bodyDef["AttachY"] = -offsetB.y();
-        bodyDef["AttachZ"] = -offsetB.z();
-      }
-
-      if (constraint->getConstraintType() == 5)
-      {
-        auto coneTwist = (btConeTwistConstraint*)constraint;
-        auto offsetA = coneTwist->getFrameOffsetA().getOrigin();
-
-        bodyDef["AttachX"] = -offsetA.x();
-        bodyDef["AttachY"] = -offsetA.y();
-        bodyDef["AttachZ"] = -offsetA.z();
-      }
-
-      //bodyDef["AttachX"] = bodyDef["AttachY"] = bodyDef["AttachZ"] = 0.0;
-    }
-    else
-    {
-      std::cout << "Could not find a parent constraint for rigid body " << rigidBodyName << std::endl;
-    }
-
+    buildRigidBodyDef(i, bodyDef);
   }
 
   return bodyDef;
+}
+
+
+void OutputBuilder::buildRigidBodyDef(int i, Json::Value & bodyDef)
+{
+  auto rigidBodyName = rigidBodyNames[i];
+  auto bodyDefName = bodyDef["Name"].asString();
+
+  std::cout << "Mapping Rigid Body " << rigidBodyName << " to " << bodyDefName << " found? " << hasKey(index.rigidBodies, rigidBodyName) << std::endl;
+
+  auto rigidBody = index.rigidBodies.at(rigidBodyName);
+  auto collision = rigidBody->getCollisionShape();
+
+  if (collision)
+  {
+    auto type = collision->getShapeType();
+    auto margin = collision->getMargin();
+    auto scaling = collision->getLocalScaling();
+
+    if (type == BOX_SHAPE_PROXYTYPE)
+    {
+      auto box = (btBoxShape*) collision;
+      auto shapeDims = box->getImplicitShapeDimensions();
+
+      bodyDef["Shape"] = "box";
+      bodyDef["Param0"] = (margin + shapeDims.x()) * 2;
+      bodyDef["Param1"] = (margin + shapeDims.y()) * 2;
+      bodyDef["Param2"] = (margin + shapeDims.z()) * 2;
+    }
+
+    if (type == SPHERE_SHAPE_PROXYTYPE)
+    {
+      auto sphere = (btSphereShape*) collision;
+      auto radius = sphere->getRadius();
+
+      bodyDef["Shape"] = "sphere";
+      bodyDef["Param0"] = radius * 2;
+      bodyDef["Param1"] = radius * 2;
+      bodyDef["Param2"] = radius * 2;
+    }
+  }
+  else
+  {
+    std::cout << "Could not find a collision shape for rigid body " << rigidBodyName << std::endl;
+    return;
+  }
+
+  if (rigidBodyName == "root")
+  {
+      auto position = rigidBody->getWorldTransform().getOrigin();
+
+      bodyDef["AttachX"] = position.x();
+      bodyDef["AttachY"] = position.y();
+      bodyDef["AttachZ"] = position.z();
+  }
+
+  if (hasKey(index.constraints, rigidBodyName))
+  {
+    auto constraint = index.constraints.at(rigidBodyName);
+
+    std::cout << "Using parent constraint " << rigidBodyName << " for positioning" << std::endl;
+
+    if (constraint->getConstraintType() == 4)
+    {
+      auto hinge = (btHingeConstraint*)constraint;
+      auto offsetB = hinge->getFrameOffsetB().getOrigin();
+
+      bodyDef["AttachX"] = -offsetB.x();
+      bodyDef["AttachY"] = -offsetB.y();
+      bodyDef["AttachZ"] = -offsetB.z();
+    }
+
+    if (constraint->getConstraintType() == 5)
+    {
+      auto coneTwist = (btConeTwistConstraint*)constraint;
+      auto offsetA = coneTwist->getFrameOffsetA().getOrigin();
+
+      bodyDef["AttachX"] = -offsetA.x();
+      bodyDef["AttachY"] = -offsetA.y();
+      bodyDef["AttachZ"] = -offsetA.z();
+    }
+
+    //bodyDef["AttachX"] = bodyDef["AttachY"] = bodyDef["AttachZ"] = 0.0;
+  }
+  else
+  {
+    std::cout << "Could not find a parent constraint for rigid body " << rigidBodyName << std::endl;
+  }
 }
 
 
