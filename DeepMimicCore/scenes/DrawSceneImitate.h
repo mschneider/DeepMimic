@@ -21,12 +21,12 @@ public:
 	virtual void DrawKinChar(bool enable);
 
 	virtual std::string GetName() const;
+	virtual cRLScene* GetRLScene() const;
 
 protected:
 
 	bool mDrawKinChar;
 
-	virtual cRLScene* GetRLScene() const;
 
 	virtual void BuildScene(std::shared_ptr<cSceneSimChar>& out_scene) const;
 	virtual void DrawCharacters() const;

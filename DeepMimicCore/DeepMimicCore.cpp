@@ -2,6 +2,13 @@
 
 #include "render/DrawUtil.h"
 #include "scenes/SceneBuilder.h"
+#include "scenes/DrawSceneImitate.h"
+#include "scenes/RLSceneSimChar.h"
+
+#include <Alembic/Abc/All.h>
+#include <Alembic/AbcCoreOgawa/All.h>
+#include <Alembic/AbcGeom/All.h>
+
 
 cDeepMimicCore::cDeepMimicCore(bool enable_draw)
 {
@@ -51,17 +58,107 @@ void cDeepMimicCore::Init()
 		InitFrameBuffer();
 	}
 	SetupScene();
+	Reset();
 }
+
+
+std::string archiveName("test.abc");
+std::vector<std::vector<tMatrix>> frames(0);
+double timePassed = 0;
+
+std::string jointNames[] = {
+  "root",
+  "chest",
+  "neck",
+  "right_hip",
+  "right_knee",
+  "right_ankle",
+  "right_shoulder",
+  "right_elbow",
+  "right_wrist",
+  "left_hip",
+  "left_knee",
+  "left_ankle",
+  "left_shoulder",
+  "left_elbow",
+  "left_wrist"
+};
 
 void cDeepMimicCore::Update(double timestep)
 {
 	mScene->Update(timestep);
+
+	auto drawScene = std::dynamic_pointer_cast<cDrawSceneImitate>(mScene);
+	auto rlSimScene = dynamic_cast<cRLSceneSimChar*>(drawScene->GetRLScene());
+	if (drawScene && rlSimScene)
+	{
+		// record data
+		auto simChar = rlSimScene->GetCharacter();
+		const auto numJoints = simChar->GetNumJoints();
+		auto transforms = std::vector<tMatrix>(numJoints);
+
+		for (int i = 0; i < numJoints; ++i)
+		{
+			const auto & joint = simChar->GetJoint(i);
+			transforms[i] = (joint.BuildWorldTrans());
+		}
+
+		//std::cout << "recorded " << numJoints << " joints" << std::endl;
+
+		frames.push_back(transforms);
+		timePassed += timestep;
+	}
 }
 
 void cDeepMimicCore::Reset()
 {
 	mScene->Reset();
 	mUpdatesPerSec = 0;
+	std::cout << "cDeepMimicCore::Reset " << frames.size() << " frames in " << timePassed << " seconds" << std::endl;
+
+	if (frames.size() > 0)
+	{
+		auto archive = Alembic::Abc::OArchive(
+				Alembic::AbcCoreOgawa::WriteArchive(),
+				archiveName,
+				Alembic::Abc::ErrorHandler::kThrowPolicy);
+
+		const auto numJoints = frames[0].size();
+		auto jointXforms = std::vector<Alembic::AbcGeom::OXform>(numJoints);
+
+		for (int i = 0; i < numJoints; ++i)
+		{
+			std::stringstream name;
+			name << "bn:deep_mimic:" << jointNames[i];
+
+			jointXforms[i] = (Alembic::AbcGeom::OXform(
+					archive.getTop(),
+					name.str()));
+		}
+
+		for (const auto & f : frames)
+		{
+			for (int i = 0; i < numJoints; ++i)
+			{
+				Alembic::AbcGeom::M44d mat;
+				for (auto y = 0; y < 4; ++y)
+				{
+					for (auto x = 0; x < 4; ++x)
+					{
+						mat[x][y] = f[i](y,x);
+					}
+				}
+
+				Alembic::AbcGeom::XformSample sample;
+				sample.setMatrix(mat);
+
+				jointXforms[i].getSchema().set(sample);
+			}
+		}
+	}
+
+	frames.clear();
+	timePassed = 0;
 }
 
 double cDeepMimicCore::GetTime() const
@@ -499,7 +596,15 @@ double cDeepMimicCore::GetRewardSucc(int agent_id)
 
 bool cDeepMimicCore::IsEpisodeEnd() const
 {
-	return mScene->IsEpisodeEnd();
+	auto drawScene = std::dynamic_pointer_cast<cDrawSceneImitate>(mScene);
+	if (drawScene)
+	{
+		return false;
+	}
+	else
+	{
+		return mScene->IsEpisodeEnd();
+	}
 }
 
 bool cDeepMimicCore::CheckValidEpisode() const
