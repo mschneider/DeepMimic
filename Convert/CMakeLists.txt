@@ -10,7 +10,8 @@ add_executable(${TARGET} ${SOURCES})
 
 if (WIN32)
 
-  set(BULLET_ROOT_WIN32 "C:/Users/nikita/Desktop/DeepMimic/deps/bullet3")
+  set(DEEP_MIMIC_ROOT_WIN32 "${CMAKE_SOURCE_DIR}/..")
+  set(BULLET_ROOT_WIN32 "${DEEP_MIMIC_ROOT_WIN32}/deps/bullet3")
 
   set(BULLET_LIBRARIES_WIN32_DEBUG
       "${BULLET_ROOT_WIN32}/bin/BulletCollision_vs2010_x64_debug.lib"
@@ -27,12 +28,12 @@ if (WIN32)
       "${BULLET_ROOT_WIN32}/bin/BulletWorldImporter_vs2010_x64_release.lib")
 
    set(BULLET_INCLUDE_DIRS "${BULLET_ROOT_WIN32}/src;${BULLET_ROOT_WIN32}/Extras/Serialize")
-   set(BULLET_LIBRARIES ${BULLET_LIBRARIES_WIN32_DEBUG})
+   set(BULLET_LIBRARIES ${BULLET_LIBRARIES_WIN32_RELEASE})
 
-   set(JSONCPP_ROOT_WIN32 "C:/Users/nikita/Desktop/DeepMimic/deps/jsoncpp")
+   set(JSONCPP_ROOT_WIN32 "${DEEP_MIMIC_ROOT_WIN32}/deps/jsoncpp")
 
-   set(JSONCPP_INCLUDE_DIRS "${JSONCPP_ROOT_WIN32}/include")
-   set(JSONCPP_LIBRARIES "${JSONCPP_ROOT_WIN32}/build/lib_json/Debug/jsoncpp.lib")
+   set(JSONCPP_INCLUDE_DIRS "${JSONCPP_ROOT_WIN32}/build/install/include")
+   set(JSONCPP_LIBRARIES "${JSONCPP_ROOT_WIN32}/build/install/lib/jsoncpp.lib")
 
 endif()
 
