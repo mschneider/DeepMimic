@@ -38,21 +38,39 @@ pip install -r requirements.txt
 Note that MPI must be installed before MPI4Py. When building Bullet, be sure to disable double precision with the build flag `USE_DOUBLE_PRECISION=OFF`.
 
 ### Windows
+
+Add the following paths to your environment:
+
+```
+DeepMimic\deps\swigwin-4.0.0
+DeepMimic\deps\glew-2.1.0\bin\Release\x64
+DeepMimic\deps\freeglut\build\install\bin
+```
+
+Make sure to build all dependencies as x64 Release and with `/MT` flags
+
 The wrapper is built using `DeepMimicCore.sln`.
 
-1. Select the `x64` configuration from the configuration manager.
+1. Select the `x64 Release_Swig` configuration from the configuration manager.
 
 2. Under the project properties for `DeepMimicCore` modify `Additional Include Directories` to specify
-	- Bullet source directory
-	- Eigen include directory
-	- python include directory
+
+```
+AppData\Local\Continuum\anaconda3\envs\deep_mimic\include
+DeepMimic\deps\glew-2.1.0\include
+DeepMimic\deps\freeglut\include
+DeepMimic\deps\eigen3
+DeepMimic\deps\bullet3\src
+```
 
 3. Modify `Additional Library Directories` to specify
-	- Bullet lib directory
-	- python lib directory
 
-4. Build `DeepMimicCore` project with the `Release_Swig` configuration and this should
-generate `DeepMimicCore.py` in `DeepMimicCore/`.
+```
+AppData\Local\Continuum\anaconda3\envs\deep_mimic\libs
+DeepMimic\deps\glew-2.1.0\lib\Release\x64
+DeepMimic\deps\freeglut\build\lib\Release
+DeepMimic\deps\bullet3\bin
+```
 
 
 ### Linux

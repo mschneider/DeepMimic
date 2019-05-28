@@ -30,47 +30,47 @@
     <ProjectGuid>{43011113-B968-462C-B99A-539E3E98BC15}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>TerrainRL</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <ProjectName>DeepMimicCore</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_Swig|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_Swig|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -141,15 +141,15 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;_USE_MATH_DEFINES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(ProjectDir);..\..\..\library\Bullet3\src;..\..\..\library\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Nikita.D\Desktop\DeepMimic\deps\bullet3\src;C:\Users\Nikita.D\Desktop\DeepMimic\deps\eigen3;C:\Users\Nikita.D\Desktop\DeepMimic\deps\freeglut\include;C:\Users\Nikita.D\Desktop\DeepMimic\deps\glew-2.1.0\include;$(ProjectDir);..\..\..\library\Bullet3\src;..\..\..\library\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>..\..\..\library\Bullet3\build3\lib\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\Nikita.D\Desktop\DeepMimic\deps\glew-2.1.0\lib\Release\x64;C:\Users\Nikita.D\Desktop\DeepMimic\deps\freeglut\build\lib\Release;C:\Users\Nikita.D\Desktop\DeepMimic\deps\bullet3\bin;..\..\..\library\Bullet3\build3\lib\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>opengl32.lib;glu32.lib;glew32.lib;BulletDynamics_Debug.lib;BulletCollision_Debug.lib;LinearMath_Debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -223,7 +223,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;_USE_MATH_DEFINES;FREEGLUT_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>false</SDLCheck>
-      <AdditionalIncludeDirectories>C:\Users\Hadas\Anaconda3\envs\deep_mimic\include;C:\Users\Hadas\Desktop\DeepMimic\deps\glew-2.1.0\include;C:\Users\Hadas\Desktop\DeepMimic\deps\freeglut\include;C:\Users\Hadas\Desktop\DeepMimic\deps\eigen3;C:\Users\Hadas\Desktop\DeepMimic\deps\bullet3\src;$(ProjectDir);..\..\..\library\Bullet3\src;..\..\..\library\;$(PYTHON_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Nikita.D\AppData\Local\Continuum\anaconda3\envs\deep_mimic\include;C:\Users\Nikita.D\Desktop\DeepMimic\deps\glew-2.1.0\include;C:\Users\Nikita.D\Desktop\DeepMimic\deps\freeglut\include;C:\Users\Nikita.D\Desktop\DeepMimic\deps\eigen3;C:\Users\Nikita.D\Desktop\DeepMimic\deps\bullet3\src;$(ProjectDir);..\..\..\library\Bullet3\src;..\..\..\library\;$(PYTHON_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -231,8 +231,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\Hadas\Desktop\DeepMimic\deps\bullet3\bin;C:\Users\Hadas\Desktop\DeepMimic\deps\freeglut\build\lib\Release;C:\Users\Hadas\Desktop\DeepMimic\deps\freeglut\build\lib\RelWithDebInfo;C:\Users\Hadas\Desktop\DeepMimic\deps\glew-2.1.0\lib\Release\x64;C:\Users\Hadas\Anaconda3\envs\deep_mimic\libs;C:\Users\Hadas\Desktop\DeepMimic\deps\bullet3\msvc\2017\lib\Debug;C:\Users\Hadas\Desktop\DeepMimic\deps\bullet3\msvc\2017\lib\RelWithDebInfo;..\..\..\library\Bullet3\build3\lib\Release;$(PYTHON_LIB);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opengl32.lib;glu32.lib;freeglut.lib;glew32.lib;BulletDynamics_vs2010_x64_release.lib;BulletDynamics_Debug.lib;BulletCollision_vs2010_x64_release.lib;BulletCollision_Debug.lib;LinearMath_vs2010_x64_release.lib;LinearMath_Debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Users\Nikita.D\AppData\Local\Continuum\anaconda3\envs\deep_mimic\libs;C:\Users\Nikita.D\Desktop\DeepMimic\deps\glew-2.1.0\lib\Release\x64;C:\Users\Nikita.D\Desktop\DeepMimic\deps\freeglut\build\lib\Release;C:\Users\Nikita.D\Desktop\DeepMimic\deps\bullet3\bin;..\..\..\library\Bullet3\build3\lib\Release;$(PYTHON_LIB);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opengl32.lib;glu32.lib;freeglut.lib;glew32.lib;BulletDynamics_vs2010_x64_release.lib;BulletCollision_vs2010_x64_release.lib;LinearMath_vs2010_x64_release.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(ProjectDir)$(TargetName)$(TargetExt)</OutputFile>
     </Link>
   </ItemDefinitionGroup>
@@ -451,7 +451,7 @@ $(SWIG_DIR)\swig.exe -c++ -python -o $(ProjectName)_wrap.cpp  $(ProjectName).i</
 echo PYTHON_LIB: %PYTHON_LIB%
 echo SWIG_DIR: %SWIG_DIR%
 echo on
-$(SWIG_DIR)\swig.exe -c++ -python -o $(ProjectName)_wrap.cpp  $(ProjectName).i</Command>
+C:\Users\Nikita.D\Desktop\DeepMimic\deps\swigwin-4.0.0\swig.exe -c++ -python -o $(ProjectName)_wrap.cpp  $(ProjectName).i</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_Swig|x64'">$(ProjectName)_wrap.cxx;%(Outputs)</Outputs>
     </CustomBuild>
   </ItemGroup>
