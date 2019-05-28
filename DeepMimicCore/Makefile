@@ -2,18 +2,23 @@ BIN=Main
 OBJ_DIR = objs
 MKDIR = mkdir -p
 
-EIGEN_DIR = /usr/local/Cellar/eigen/3.3.7/include/eigen3
-BULLET_INC_DIR = /usr/local/Cellar/bullet/2.88/include/bullet
+EIGEN_DIR = /usr/local/include/eigen3
+BULLET_INC_DIR = /usr/local/include/bullet
+ALEMBIC_INC_DIR = ../deps/alembic/lib
+OPENEXR_INC_DIR = /usr/local/include/OpenEXR
 
 PYTHON_INC = /usr/local/opt/python/Frameworks/Python.framework/Versions/3.7/include/python3.7m
 PYTHON_LIB = /usr/local/opt/python/Frameworks/Python.framework/Versions/3.7/lib -lpython3.7m
 
 INC = -I./ \
 	-I$(EIGEN_DIR) \
-	-I$(BULLET_INC_DIR)
+	-I$(BULLET_INC_DIR) \
+	-I$(ALEMBIC_INC_DIR) \
+	-I$(ALEMBIC_INC_DIR)/../build/lib \
+	-I$(OPENEXR_INC_DIR)
 
-LIBS = -framework OpenGL -framework GLUT -lGLEW -lBulletDynamics -lBulletCollision -lLinearMath -lm -lstdc++
 
+LIBS = -framework OpenGL -framework GLUT -lGLEW -lBulletDynamics -lBulletCollision -lLinearMath -lm -lstdc++ ../deps/alembic/build/lib/Alembic/libAlembic.a -lImath -lHalf -lIex -lIexMath -lIlmThread
 CC = clang++
 CFLAGS = -std=c++11 -O3 -Wall -fPIC 
 
