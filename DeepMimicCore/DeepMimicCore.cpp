@@ -6,6 +6,7 @@
 #include "scenes/RLSceneSimChar.h"
 
 #include <Alembic/Abc/All.h>
+#include <Alembic/AbcCoreAbstract/All.h>
 #include <Alembic/AbcCoreOgawa/All.h>
 #include <Alembic/AbcGeom/All.h>
 
@@ -89,24 +90,25 @@ void cDeepMimicCore::Update(double timestep)
 	mScene->Update(timestep);
 
 	auto drawScene = std::dynamic_pointer_cast<cDrawSceneImitate>(mScene);
-	auto rlSimScene = dynamic_cast<cRLSceneSimChar*>(drawScene->GetRLScene());
-	if (drawScene && rlSimScene)
+	if (drawScene)
 	{
-		// record data
-		auto simChar = rlSimScene->GetCharacter();
-		const auto numJoints = simChar->GetNumJoints();
-		auto transforms = std::vector<tMatrix>(numJoints);
-
-		for (int i = 0; i < numJoints; ++i)
+		auto rlSimScene = dynamic_cast<cRLSceneSimChar*>(drawScene->GetRLScene());
+		if (rlSimScene)
 		{
-			const auto & joint = simChar->GetJoint(i);
-			transforms[i] = (joint.BuildWorldTrans());
+			// record data
+			auto simChar = rlSimScene->GetCharacter();
+			const auto numJoints = simChar->GetNumJoints();
+			auto transforms = std::vector<tMatrix>(numJoints);
+
+			for (int i = 0; i < numJoints; ++i)
+			{
+				const auto & joint = simChar->GetJoint(i);
+				transforms[i] = (joint.BuildWorldTrans());
+			}
+
+			frames.push_back(transforms);
+			timePassed += timestep;
 		}
-
-		//std::cout << "recorded " << numJoints << " joints" << std::endl;
-
-		frames.push_back(transforms);
-		timePassed += timestep;
 	}
 }
 
@@ -114,14 +116,18 @@ void cDeepMimicCore::Reset()
 {
 	mScene->Reset();
 	mUpdatesPerSec = 0;
-	std::cout << "cDeepMimicCore::Reset " << frames.size() << " frames in " << timePassed << " seconds" << std::endl;
 
 	if (frames.size() > 0)
 	{
+		auto frameDuration = timePassed / frames.size();
+		std::cout << "cDeepMimicCore::Reset " << frames.size() << " frames in " << timePassed << " seconds, per frame " << frameDuration << std::endl;
 		auto archive = Alembic::Abc::OArchive(
 				Alembic::AbcCoreOgawa::WriteArchive(),
 				archiveName,
 				Alembic::Abc::ErrorHandler::kThrowPolicy);
+
+		auto timeSampling = Alembic::AbcCoreAbstract::TimeSampling(frameDuration, 0.0f);
+		auto timeSamplingIdx = archive.addTimeSampling(timeSampling);
 
 		const auto numJoints = frames[0].size();
 		auto jointXforms = std::vector<Alembic::AbcGeom::OXform>(numJoints);
@@ -131,9 +137,11 @@ void cDeepMimicCore::Reset()
 			std::stringstream name;
 			name << "bn:deep_mimic:" << jointNames[i];
 
-			jointXforms[i] = (Alembic::AbcGeom::OXform(
+			jointXforms[i] = Alembic::AbcGeom::OXform(
 					archive.getTop(),
-					name.str()));
+					name.str());
+
+			jointXforms[i].getSchema().setTimeSampling(timeSamplingIdx);
 		}
 
 		for (const auto & f : frames)
