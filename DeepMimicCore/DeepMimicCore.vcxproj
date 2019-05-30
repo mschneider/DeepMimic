@@ -223,16 +223,17 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;_USE_MATH_DEFINES;FREEGLUT_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>false</SDLCheck>
-      <AdditionalIncludeDirectories>C:\Users\Nikita.D\AppData\Local\Continuum\anaconda3\envs\deep_mimic\include;C:\Users\Nikita.D\Desktop\DeepMimic\deps\glew-2.1.0\include;C:\Users\Nikita.D\Desktop\DeepMimic\deps\freeglut\include;C:\Users\Nikita.D\Desktop\DeepMimic\deps\eigen3;C:\Users\Nikita.D\Desktop\DeepMimic\deps\bullet3\src;$(ProjectDir);..\..\..\library\Bullet3\src;..\..\..\library\;$(PYTHON_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\AppData\Local\Continuum\anaconda3\envs\deep_mimic\include;$(ProjectDir)..\deps\openexr\build\install\include\OpenEXR;$(ProjectDir)..\deps\alembic\build\lib;$(ProjectDir)..\deps\alembic\lib;$(ProjectDir)..\deps\glew-2.1.0\include;$(ProjectDir)..\deps\freeglut\include;$(ProjectDir)..\deps\eigen3;$(ProjectDir)..\deps\bullet3\src;$(ProjectDir);..\..\..\library\Bullet3\src;..\..\..\library\;$(PYTHON_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\Nikita.D\AppData\Local\Continuum\anaconda3\envs\deep_mimic\libs;C:\Users\Nikita.D\Desktop\DeepMimic\deps\glew-2.1.0\lib\Release\x64;C:\Users\Nikita.D\Desktop\DeepMimic\deps\freeglut\build\lib\Release;C:\Users\Nikita.D\Desktop\DeepMimic\deps\bullet3\bin;..\..\..\library\Bullet3\build3\lib\Release;$(PYTHON_LIB);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opengl32.lib;glu32.lib;freeglut.lib;glew32.lib;BulletDynamics_vs2010_x64_release.lib;BulletCollision_vs2010_x64_release.lib;LinearMath_vs2010_x64_release.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\AppData\Local\Continuum\anaconda3\envs\deep_mimic\libs;$(ProjectDir)..\deps\alembic\build\lib\Alembic\Release;$(ProjectDir)..\deps\glew-2.1.0\lib\Release\x64;$(ProjectDir)..\deps\freeglut\build\lib\Release;$(ProjectDir)..\deps\bullet3\bin;..\..\..\library\Bullet3\build3\lib\Release;$(PYTHON_LIB);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Alembic.lib;opengl32.lib;glu32.lib;freeglut.lib;glew32.lib;BulletDynamics_vs2010_x64_release.lib;BulletCollision_vs2010_x64_release.lib;LinearMath_vs2010_x64_release.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(ProjectDir)$(TargetName)$(TargetExt)</OutputFile>
     </Link>
   </ItemDefinitionGroup>
