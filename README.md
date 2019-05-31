@@ -45,6 +45,8 @@ Add the following paths to your environment:
 DeepMimic\deps\swigwin-4.0.0
 DeepMimic\deps\glew-2.1.0\bin\Release\x64
 DeepMimic\deps\freeglut\build\install\bin
+DeepMimic\deps\alembic\build\install\lib
+DeepMimic\deps\openexr\build\install\bin
 ```
 
 Make sure to build all dependencies as x64 Release and with `/MT` flags
@@ -57,19 +59,20 @@ The wrapper is built using `DeepMimicCore.sln`.
 
 ```
 AppData\Local\Continuum\anaconda3\envs\deep_mimic\include
-DeepMimic\deps\glew-2.1.0\include
-DeepMimic\deps\freeglut\include
-DeepMimic\deps\eigen3
-DeepMimic\deps\bullet3\src
+$(ProjectDir)..\deps\glew-2.1.0\include
+$(ProjectDir)..\deps\freeglut\include
+$(ProjectDir)..\deps\eigen3
+$(ProjectDir)..\deps\bullet3\src
 ```
 
 3. Modify `Additional Library Directories` to specify
 
 ```
 AppData\Local\Continuum\anaconda3\envs\deep_mimic\libs
-DeepMimic\deps\glew-2.1.0\lib\Release\x64
-DeepMimic\deps\freeglut\build\lib\Release
-DeepMimic\deps\bullet3\bin
+$(ProjectDir)..\deps\glew-2.1.0\lib\Release\x64
+$(ProjectDir)..\deps\freeglut\build\lib\Release
+$(ProjectDir)..\deps\bullet3\bin
+$(ProjectDir)..\deps\alembic\build\lib\Alembic\Release
 ```
 
 

@@ -89,6 +89,8 @@ protected:
 	std::shared_ptr<cTextureDesc> mDefaultFrameBuffer;
 
 	int mNumUpdateSubsteps;
+	std::string mAlembicInputPath;
+	std::string mAlembicOutputPath;
 
 	// info for rendering
 	double mPlaybackSpeed;
