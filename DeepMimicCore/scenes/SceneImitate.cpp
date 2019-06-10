@@ -330,7 +330,7 @@ void cSceneImitate::ResetCharacters()
 
 void cSceneImitate::ResetKinChar()
 {
-	double rand_time = CalcRandKinResetTime();
+	double rand_time = 0.0; // CalcRandKinResetTime();
 
 	const cSimCharacter::tParams& char_params = mCharParams[0];
 	const auto& kin_char = GetKinChar();
@@ -341,7 +341,7 @@ void cSceneImitate::ResetKinChar()
 	kin_char->SetTime(rand_time);
 	kin_char->Pose(rand_time);
 
-	if (EnabledRandRotReset())
+	if (EnabledRandRotReset() && false)
 	{
 		double rand_theta = mRand.RandDouble(-M_PI, M_PI);
 		kin_char->RotateOrigin(cMathUtil::EulerToQuaternion(tVector(0, rand_theta, 0, 0)));
