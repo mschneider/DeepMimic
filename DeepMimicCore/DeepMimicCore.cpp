@@ -10,6 +10,10 @@
 #include <Alembic/AbcCoreOgawa/All.h>
 #include <Alembic/AbcGeom/All.h>
 
+#include <Eigen/Core>
+
+#include <algorithm>
+#include <iterator>
 #include <string>
 
 
@@ -253,9 +257,9 @@ void assignJointPose(
 	rootPose.segment(param_offset, param_size) = jointPose;
 }
 
-Eigen::Vector<double,1> toVector(const double& val)
+Eigen::Matrix<double,1,1> toVector(const double& val)
 {
-	return Eigen::Vector<double, 1>(val);;
+	return Eigen::Matrix<double, 1, 1>(val);;
 }
 
 Eigen::Vector4d toVector(const Eigen::Quaterniond& q)
@@ -389,7 +393,12 @@ void cDeepMimicCore::Reset()
 						auto upDir = (parentPos - jointPos).normalized();
 						auto downDir = (childPos - jointPos).normalized();
 
-						auto diffAngle = std::acos(upDir.dot(downDir));
+						auto diffAngle = std::acos(std::clamp(upDir.dot(downDir), -1.0, 1.0));
+
+						//std::cout << "DEBUG: " << jointName << std::endl \
+											<< " upDir:" << std::endl << upDir << std::endl \
+											<< " downDir:" << std::endl << downDir << std::endl \
+											<< " dot:" << upDir.dot(downDir) << std::endl << " diffAngle:" << diffAngle << std::endl;
 
 						if (jointName == "right_knee" || jointName == "left_knee")
 						{
