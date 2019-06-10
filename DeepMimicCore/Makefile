@@ -20,7 +20,7 @@ INC = -I./ \
 
 LIBS = -framework OpenGL -framework GLUT -lGLEW -lBulletDynamics -lBulletCollision -lLinearMath -lm -lstdc++ ../deps/alembic/build/lib/Alembic/libAlembic.a -lImath -lHalf -lIex -lIexMath -lIlmThread
 CC = clang++
-CFLAGS = -std=c++11 -O3 -Wall -fPIC 
+CFLAGS = -std=c++17 -O3 -Wall -fPIC 
 
 SRC_DIRS = util/ \
 	util/json/ \
