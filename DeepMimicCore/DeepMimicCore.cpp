@@ -12,10 +12,16 @@
 
 #include <Eigen/Core>
 
-#include <algorithm>
 #include <iterator>
 #include <string>
 
+namespace std
+{
+	double clamp(double v, double lo, double hi)
+	{
+		return std::min(std::max(v, lo), hi);
+	}
+}
 
 cDeepMimicCore::cDeepMimicCore(bool enable_draw)
 {
