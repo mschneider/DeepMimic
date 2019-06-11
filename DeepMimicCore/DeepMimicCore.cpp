@@ -911,7 +911,7 @@ bool cDeepMimicCore::IsEpisodeEnd() const
 bool cDeepMimicCore::CheckValidEpisode() const
 {
 	auto drawScene = std::dynamic_pointer_cast<cDrawSceneImitate>(mScene);
-	if (false && drawScene)
+	if (drawScene)
 	{
 		return true;
 	}
