@@ -91,6 +91,7 @@ protected:
 	int mNumUpdateSubsteps;
 	std::string mAlembicInputPath;
 	std::string mAlembicOutputPath;
+	std::string mMotionOutputPath;
 
 	// info for rendering
 	double mPlaybackSpeed;
