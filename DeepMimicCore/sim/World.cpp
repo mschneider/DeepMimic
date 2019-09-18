@@ -4,6 +4,7 @@
 #include "BulletDynamics/MLCPSolvers/btDantzigSolver.h"
 #include "BulletDynamics/MLCPSolvers/btMLCPSolver.h"
 #include "BulletDynamics/Featherstone/btMultiBodyConstraintSolver.h"
+#include "BulletSoftBody/btSoftMultiBodyDynamicsWorld.h"
 
 #include "sim/SimBox.h"
 #include "sim/SimCapsule.h"
@@ -60,7 +61,7 @@ void cWorld::Init(const tParams& params)
 
 	auto solver = new btMultiBodyConstraintSolver();
 	mSolver = std::unique_ptr<btSequentialImpulseConstraintSolver>(solver);
-	mSimWorld = std::unique_ptr<btMultiBodyDynamicsWorld>(new btMultiBodyDynamicsWorld(mCollisionDispatcher.get(),
+	mSimWorld = std::unique_ptr<btMultiBodyDynamicsWorld>(new btSoftMultiBodyDynamicsWorld	(mCollisionDispatcher.get(),
 														mBroadPhase.get(), solver, mCollisionConfig.get()));
 
 	btContactSolverInfo& info = mSimWorld->getSolverInfo();
