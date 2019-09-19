@@ -13,6 +13,7 @@ public:
 		eShapeSphere,
 		eShapeCylinder,
 		eShapePlane,
+		eShapeMesh,
 		eShapeMax,
 	};
 

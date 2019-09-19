@@ -1,4 +1,5 @@
 #include "DrawObj.h"
+#include "sim/SimRigidMesh.h"
 
 void cDrawObj::Draw(const cSimObj* obj, cDrawUtil::eDrawMode draw_mode)
 {
@@ -20,6 +21,8 @@ void cDrawObj::Draw(const cSimObj* obj, cDrawUtil::eDrawMode draw_mode)
 	case cShape::eShapeCylinder:
 		DrawCylinder(obj, draw_mode);
 		break;
+	case cShape::eShapeMesh:
+		DrawMesh(obj, draw_mode);
 	default:
 		assert(false); // unsupported shape
 		break;
@@ -109,6 +112,22 @@ void cDrawObj::DrawCylinder(const cSimObj* cap, cDrawUtil::eDrawMode draw_mode)
 	cDrawUtil::Translate(pos);
 	cDrawUtil::Rotate(theta, axis);
 	cDrawUtil::DrawCylinder(r, h, draw_mode);
+
+	cDrawUtil::PopMatrixView();
+}
+
+void cDrawObj::DrawMesh(const cSimObj* cap, cDrawUtil::eDrawMode draw_mode)
+{
+	assert(cap->GetShape() == cShape::eShapeMesh);
+
+	cDrawUtil::PushMatrixView();
+
+	tVector pos = cap->GetPos();
+	cDrawUtil::Translate(pos);
+
+	GLenum gl_mode = (draw_mode == cDrawUtil::eDrawMode::eDrawSolid) ? GL_TRIANGLES : GL_LINES;
+	auto mesh = ((cSimRigidMesh*)cap)->GetDrawMesh();
+	mesh->Draw(gl_mode);
 
 	cDrawUtil::PopMatrixView();
 }

@@ -2,7 +2,14 @@
 
 #include <memory>
 #include <ctime>
+
+#include <Alembic/Abc/All.h>
+#include <Alembic/AbcCoreAbstract/All.h>
+#include <Alembic/AbcCoreOgawa/All.h>
+#include <Alembic/AbcGeom/All.h>
+
 #include "sim/SimBox.h"
+#include "sim/SimRigidMesh.h"
 #include "sim/GroundPlane.h"
 #include "sim/GroundBuilder.h"
 #include "sim/DeepMimicCharController.h"
@@ -59,6 +66,9 @@ cSceneSimChar::cSceneSimChar()
 	mWorldParams.mNumSubsteps = 1;
 	mWorldParams.mScale = 1;
 	mWorldParams.mGravity = gGravity;
+
+	mMattressInputPath = "";
+	mMattressOutputPath = "";
 }
 
 cSceneSimChar::~cSceneSimChar()
@@ -99,6 +109,9 @@ void cSceneSimChar::ParseArgs(const std::shared_ptr<cArgParser>& parser)
 	parser->ParseInts("perturb_part_ids", mPerturbParams.mPerturbPartIDs);
 
 	parser->ParseInts("fall_contact_bodies", mFallContactBodies);
+
+	parser->ParseString("mattress_input_path", mMattressInputPath);
+	parser->ParseString("mattress_output_path", mMattressOutputPath);
 
 	ParseGroundParams(parser, mGroundParams);
 }
@@ -641,6 +654,60 @@ void cSceneSimChar::ResetScene()
 
 	InitCharacterPos();
 	ResolveCharGroundIntersect();
+
+	std::cin.get();
+
+	if (!mMattressInputPath.empty())
+	{
+		auto archive = Alembic::Abc::IArchive(
+			Alembic::AbcCoreOgawa::ReadArchive(),
+			mMattressInputPath,
+			Alembic::Abc::ErrorHandler::kThrowPolicy);
+
+		std::cout << "cSceneSimChar::ResetScene reading from " << mMattressInputPath << std::endl;
+
+		auto rootTransform = Alembic::AbcGeom::IXform(archive.getTop(), "mattress_col_root");
+		auto polyMesh = Alembic::AbcGeom::IPolyMesh(rootTransform, "mattress_col_rootShape");
+
+		Alembic::AbcCoreAbstract::index_t lastIndex = polyMesh.getSchema().getNumSamples() - 1;
+		auto lastSampleSelector = Alembic::Abc::ISampleSelector(lastIndex);
+
+
+		Alembic::AbcGeom::IPolyMeshSchema::Sample meshSample;
+		polyMesh.getSchema().get(meshSample, lastSampleSelector);
+
+		int numVertices = meshSample.getPositions()->size();
+		int numIndizes = meshSample.getFaceIndices()->size();
+
+		auto vertexPtr = meshSample.getPositions()->get();
+		auto indexPtr = meshSample.getFaceIndices()->get();
+
+		auto normalsArray = polyMesh.getSchema().getNormalsParam().getExpandedValue().getVals();
+		auto uvsArray = polyMesh.getSchema().getUVsParam().getExpandedValue().getVals();
+
+		std::cout << " found " << numVertices << " vertices with " << numIndizes << " indizes and " <<
+			normalsArray->size() << " normals " << uvsArray->size() << " uvs" << std::endl;
+		
+		std::vector<btScalar> vertices((btScalar*) vertexPtr, (btScalar*) (vertexPtr + numVertices));
+		std::vector<int32_t> indices(indexPtr, indexPtr + numIndizes);
+		std::vector<float> normals((float*)normalsArray->get(), (float*)(normalsArray->get() + normalsArray->size()));
+		std::vector<float> uvs((float*)uvsArray->get(), (float*)(uvsArray->get() + uvsArray->size()));
+
+		std::cout << " copied " << vertices.size() / 3 << " vertices with " << indices.size() << " indizes and " <<
+			normals.size() / 3 << " normals " << uvs.size() / 2 << " uvs " << std::endl;
+
+		auto posMinMax = std::minmax_element(vertices.begin(), vertices.end());
+		auto idxMinMax = std::minmax_element(indices.begin(), indices.end());
+		auto normMinMax = std::minmax_element(normals.begin(), normals.end());
+		auto uvMinMax = std::minmax_element(uvs.begin(), uvs.end());
+
+		std::cout << " pos min: " << *posMinMax.first << " max: " << *posMinMax.second << std::endl;
+		std::cout << " idx min: " << *idxMinMax.first << " max: " << *idxMinMax.second << std::endl;
+		std::cout << " norm min: " << *normMinMax.first << " max: " << *normMinMax.second << std::endl;
+		std::cout << " uv min: " << *uvMinMax.first << " max: " << *uvMinMax.second << std::endl;
+
+		SpawnRigidMesh(vertices, indices, normals, uvs);
+	}
 }
 
 void cSceneSimChar::ResetCharacters()
@@ -943,6 +1010,27 @@ void cSceneSimChar::SpawnProjectile(double density, double min_size, double max_
 	
 	AddObj(obj_entry);
 }
+
+void cSceneSimChar::SpawnRigidMesh(const std::vector<btScalar> & vertices, const std::vector<int> & indizes, const std::vector<float> & normals, const std::vector<float>& uvs)
+{
+	std::shared_ptr<cSimRigidMesh> simMesh = std::shared_ptr<cSimRigidMesh>(new cSimRigidMesh());
+
+	cSimRigidMesh::tParams params;
+	params.mVertices = vertices;
+	params.mIndizes = indizes;
+	params.mNormals = normals;
+	params.mUVs = uvs;
+
+	simMesh->Init(mWorld, params);
+	simMesh->UpdateContact(cWorld::eContactFlagObject, cContactManager::gFlagNone);
+
+	tObjEntry obj_entry;
+	obj_entry.mObj = simMesh;
+	obj_entry.mEndTime = std::numeric_limits<float>::max();
+
+	AddObj(obj_entry);
+}
+
 
 void cSceneSimChar::ResetRandPertrub()
 {
