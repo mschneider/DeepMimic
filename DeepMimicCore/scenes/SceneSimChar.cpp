@@ -22,6 +22,158 @@ const double cSceneSimChar::gGroundSpawnOffset = -1; // some padding to prevent 
 
 const size_t gInitGroundUpdateCount = std::numeric_limits<size_t>::max();
 
+namespace serializeSceneSimChar {
+
+	typedef struct shape {
+		std::vector<btScalar> vertices;
+		std::vector<int32_t> indices;
+		std::vector<float> normals;
+		std::vector<float> uvs;
+	} shape_t;
+
+
+	int mattressHandle = 0;
+	shape_t mattressShape;
+	std::vector<tMatrix> frames(0);
+	double timePassed = 0;
+
+
+	double frameDuration()
+	{
+		return timePassed / frames.size();
+	}
+
+	void serializeFrameCache(Alembic::Abc::OArchive& archive)
+	{
+		auto timeSampling = Alembic::AbcCoreAbstract::TimeSampling(frameDuration(), 0.0f);
+		auto timeSamplingIdx = archive.addTimeSampling(timeSampling);
+
+		auto rootXform = Alembic::AbcGeom::OXform(archive.getTop(), "mattress_col_root");
+		auto shape = Alembic::AbcGeom::OPolyMesh(rootXform, "mattress_col_rootShape");
+
+		rootXform.getSchema().setTimeSampling(timeSamplingIdx);
+		shape.getSchema().setTimeSampling(timeSamplingIdx);
+		shape.getSchema().setUVSourceName("uv");
+
+		std::vector<Alembic::Abc::V3f> vertices;
+		for (int i = 0; i < mattressShape.vertices.size() / 3; ++i)
+		{
+			// scale by 100 to make cm unit export work between c4d and bullet
+
+			auto x = mattressShape.vertices[i * 3 + 0];// *100.0;
+			auto y = mattressShape.vertices[i * 3 + 1];// *100.0;
+			auto z = mattressShape.vertices[i * 3 + 2];// *100.0;
+
+			vertices.push_back(Alembic::Abc::V3f(x, y, z));
+		}
+
+		std::vector<Alembic::Abc::int32_t> indices;
+		for (int i = 0; i < mattressShape.indices.size() / 3; ++i)
+		{
+			auto& i0 = mattressShape.indices[i * 3 + 0];
+			auto& i1 = mattressShape.indices[i * 3 + 1];
+			auto& i2 = mattressShape.indices[i * 3 + 2];
+
+			// invert index order to convert handedness
+			indices.push_back(i2);
+			indices.push_back(i1);
+			indices.push_back(i0);
+		}
+
+		std::vector<Alembic::Abc::int32_t> faceCounts;
+		for (int i = 0; i < indices.size() / 3; ++i)
+		{
+			faceCounts.push_back(3);
+		}
+
+		std::vector<Alembic::Abc::V2f> uvs;
+		for (int i = 0; i < mattressShape.uvs.size() / 2; ++i)
+		{
+			auto u = mattressShape.uvs[i * 2 + 0];
+			auto v = mattressShape.uvs[i * 2 + 1];
+
+			uvs.push_back(Alembic::Abc::V2f(u, v));
+		}
+
+		Alembic::AbcGeom::OV2fGeomParam::Sample uvSample(
+			Alembic::Abc::V2fArraySample(
+				uvs.data(),
+				uvs.size()),
+			Alembic::AbcGeom::kFacevaryingScope);
+
+		std::vector<Alembic::Abc::N3f> normals;
+		for (int i = 0; i < mattressShape.normals.size() / 3; ++i)
+		{
+			auto x = mattressShape.normals[i * 3 + 0];
+			auto y = mattressShape.normals[i * 3 + 1];
+			auto z = mattressShape.normals[i * 3 + 2];
+
+			normals.push_back(Alembic::Abc::N3f(x, y, z));
+		}
+
+		Alembic::AbcGeom::ON3fGeomParam::Sample normalSample(
+			Alembic::Abc::N3fArraySample(
+				normals.data(),
+				normals.size()),
+			Alembic::AbcGeom::kFacevaryingScope);
+
+		std::cout << " encoded " << vertices.size() << " vertices " << indices.size() << " indizes " << faceCounts.size() << " faces" << std::endl;
+
+		bool firstFrame = true;
+
+		for (const auto& f : frames)
+		{
+			Alembic::AbcGeom::M44d mat;
+			for (auto y = 0; y < 4; ++y)
+			{
+				for (auto x = 0; x < 4; ++x)
+				{
+					mat[x][y] = f(y, x);
+				}
+			}
+
+			Alembic::AbcGeom::XformSample xformSample;
+			xformSample.setMatrix(mat);
+			rootXform.getSchema().set(xformSample);
+
+			Alembic::AbcGeom::OPolyMeshSchema::Sample meshSample;
+
+			meshSample.setPositions(
+				Alembic::Abc::P3fArraySample(
+					vertices.data(),
+					vertices.size()));
+
+			if (firstFrame)
+			{
+				meshSample.setFaceIndices(
+					Alembic::Abc::Int32ArraySample(
+						indices.data(),
+						indices.size()));
+
+				meshSample.setFaceCounts(
+					Alembic::Abc::Int32ArraySample(
+						faceCounts.data(),
+						faceCounts.size()
+					)
+				);
+
+				
+				meshSample.setUVs(uvSample);
+
+				//meshSample.setNormals(normals);
+
+				firstFrame = false;
+
+			}
+
+			shape.getSchema().set(meshSample);
+		}
+	}
+
+}
+
+using namespace serializeSceneSimChar;
+
 cSceneSimChar::tObjEntry::tObjEntry()
 {
 	mObj = nullptr;
@@ -657,6 +809,24 @@ void cSceneSimChar::ResetScene()
 
 	std::cin.get();
 
+	if (frames.size() > 10)
+	{
+		std::cout << "cSceneSimChar::ResetScene " << frames.size() \
+			<< " frames in " << timePassed \
+			<< " seconds, per frame " << frameDuration() \
+			<< " writing to " << mMattressOutputPath << std::endl;
+
+		auto archive = Alembic::Abc::OArchive(
+			Alembic::AbcCoreOgawa::WriteArchive(),
+			mMattressOutputPath,
+			Alembic::Abc::ErrorHandler::kThrowPolicy);
+
+		serializeFrameCache(archive);
+	}
+
+	frames.clear();
+	timePassed = 0;
+
 	if (!mMattressInputPath.empty())
 	{
 		auto archive = Alembic::Abc::IArchive(
@@ -741,7 +911,12 @@ void cSceneSimChar::ResetScene()
 		std::cout << " norm min: " << *normMinMax.first << " max: " << *normMinMax.second << std::endl;
 		std::cout << " uv min: " << *uvMinMax.first << " max: " << *uvMinMax.second << std::endl;
 
-		SpawnRigidMesh(rootPos, vertices, indices, normals, uvs);
+		mattressShape.vertices = vertices;
+		mattressShape.indices = indices;
+		mattressShape.normals = normals;
+		mattressShape.uvs = uvs;
+
+		mattressHandle = SpawnRigidMesh(rootPos, vertices, indices, normals, uvs);
 	}
 }
 
@@ -787,6 +962,15 @@ void cSceneSimChar::PreUpdate(double timestep)
 
 void cSceneSimChar::PostUpdate(double timestep)
 {
+	if (!mMattressInputPath.empty() && !mMattressOutputPath.empty())
+	{
+		auto mesh = std::dynamic_pointer_cast<cSimRigidMesh>(GetObj(mattressHandle));
+		auto worldTransform = mesh->GetWorldTransform();
+
+		frames.push_back(worldTransform);
+
+		timePassed += timestep;
+	}
 }
 
 void cSceneSimChar::GetViewBound(tVector& out_min, tVector& out_max) const
@@ -1064,7 +1248,7 @@ int cSceneSimChar::SpawnRigidMesh(const tVector & rootPos, const std::vector<btS
 	obj_entry.mObj = simMesh;
 	obj_entry.mEndTime = std::numeric_limits<float>::max();
 
-	AddObj(obj_entry);
+	return AddObj(obj_entry);
 }
 
 

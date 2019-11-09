@@ -26,3 +26,4 @@
 
 
 --mattress_input_path data/props/cube_mattress_exports_03.abc
+--mattress_output_path mattress.abc

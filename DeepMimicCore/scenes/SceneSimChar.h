@@ -170,7 +170,7 @@ protected:
 	virtual void SpawnProjectile(double density, double min_size, double max_size,
 									double min_speed, double max_speed, double y_offset, double life_time);
 
-	virtual void SpawnRigidMesh(
+	virtual int SpawnRigidMesh(
 		const tVector& rootPos,
 		const std::vector<btScalar>& vertices,
 		const std::vector<int32_t>& indizes,
