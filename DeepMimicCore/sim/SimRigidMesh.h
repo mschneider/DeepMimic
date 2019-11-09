@@ -13,9 +13,11 @@ public:
 		eType mType;
 		double mMass;
 		double mFriction;
-		tVector mPos;
-
 		bool mUseQuantizedAabbCompression;
+
+		tVector mPos;
+		tVector mVel;
+		tQuaternion mRot;
 
 		std::vector<btScalar> mVertices;
 		std::vector<int32_t> mIndizes;
@@ -40,7 +42,6 @@ public:
 	std::vector<float> mNormals;
 	std::vector<float> mUVs;
 
-	btTriangleIndexVertexArray* mCollissionMesh;
 	cDrawMesh* mDrawMesh;
 };
 

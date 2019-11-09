@@ -171,6 +171,7 @@ protected:
 									double min_speed, double max_speed, double y_offset, double life_time);
 
 	virtual void SpawnRigidMesh(
+		const tVector& rootPos,
 		const std::vector<btScalar>& vertices,
 		const std::vector<int32_t>& indizes,
 		const std::vector<float>& normals,

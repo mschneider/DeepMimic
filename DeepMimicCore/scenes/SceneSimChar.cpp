@@ -669,12 +669,24 @@ void cSceneSimChar::ResetScene()
 		auto rootTransform = Alembic::AbcGeom::IXform(archive.getTop(), "mattress_col_root");
 		auto polyMesh = Alembic::AbcGeom::IPolyMesh(rootTransform, "mattress_col_rootShape");
 
-		Alembic::AbcCoreAbstract::index_t lastIndex = polyMesh.getSchema().getNumSamples() - 1;
-		auto lastSampleSelector = Alembic::Abc::ISampleSelector(lastIndex);
+		Alembic::AbcCoreAbstract::index_t lastIndexRootTransform = rootTransform.getSchema().getNumSamples() - 1;
+		auto lastSampleSelectorRootTransform = Alembic::Abc::ISampleSelector(lastIndexRootTransform);
 
+		Alembic::AbcCoreAbstract::index_t lastIndex = polyMesh.getSchema().getNumSamples() - 1;
+		auto lastSampleSelectorMesh = Alembic::Abc::ISampleSelector(lastIndex);
+
+		Alembic::AbcGeom::XformSample rootTransformSample;
+		rootTransform.getSchema().get(rootTransformSample, lastSampleSelectorRootTransform);
+
+		auto rootTransformTranslation = rootTransformSample.getTranslation() / 100.0;
+		//auto rootPos = tVector(rootTransformTranslation.x, rootTransformTranslation.y, rootTransformTranslation.z, 0);
+
+		auto rootPos = tVector(-1, 0.44, 0, 0);
+
+		std::cout << " found rootTransform with position " << std::endl << rootTransformSample.getTranslation() << std::endl;
 
 		Alembic::AbcGeom::IPolyMeshSchema::Sample meshSample;
-		polyMesh.getSchema().get(meshSample, lastSampleSelector);
+		polyMesh.getSchema().get(meshSample, lastSampleSelectorMesh);
 
 		int numVertices = meshSample.getPositions()->size();
 		int numIndizes = meshSample.getFaceIndices()->size();
@@ -688,8 +700,31 @@ void cSceneSimChar::ResetScene()
 		std::cout << " found " << numVertices << " vertices with " << numIndizes << " indizes and " <<
 			normalsArray->size() << " normals " << uvsArray->size() << " uvs" << std::endl;
 		
-		std::vector<btScalar> vertices((btScalar*) vertexPtr, (btScalar*) (vertexPtr + numVertices));
-		std::vector<int32_t> indices(indexPtr, indexPtr + numIndizes);
+		std::vector<btScalar> vertices;
+
+		for (int i = 0; i < numVertices; ++i)
+		{
+			// scale by 100 to make cm unit export work between c4d and bullet
+			auto & vec3 = vertexPtr[i] / 100.0;
+			vertices.push_back(vec3.x);
+			vertices.push_back(vec3.y);
+			vertices.push_back(vec3.z);
+		}
+
+		std::vector<int32_t> indices;
+
+		for (int i = 0; i < numIndizes / 3; ++i)
+		{
+			auto & i0 = indexPtr[i*3+0];
+			auto & i1 = indexPtr[i*3+1];
+			auto & i2 = indexPtr[i*3+2];
+
+			// invert index order to convert handedness
+			indices.push_back(i2);
+			indices.push_back(i1);
+			indices.push_back(i0);
+		}
+
 		std::vector<float> normals((float*)normalsArray->get(), (float*)(normalsArray->get() + normalsArray->size()));
 		std::vector<float> uvs((float*)uvsArray->get(), (float*)(uvsArray->get() + uvsArray->size()));
 
@@ -706,7 +741,7 @@ void cSceneSimChar::ResetScene()
 		std::cout << " norm min: " << *normMinMax.first << " max: " << *normMinMax.second << std::endl;
 		std::cout << " uv min: " << *uvMinMax.first << " max: " << *uvMinMax.second << std::endl;
 
-		SpawnRigidMesh(vertices, indices, normals, uvs);
+		SpawnRigidMesh(rootPos, vertices, indices, normals, uvs);
 	}
 }
 
@@ -1011,11 +1046,12 @@ void cSceneSimChar::SpawnProjectile(double density, double min_size, double max_
 	AddObj(obj_entry);
 }
 
-void cSceneSimChar::SpawnRigidMesh(const std::vector<btScalar> & vertices, const std::vector<int> & indizes, const std::vector<float> & normals, const std::vector<float>& uvs)
+int cSceneSimChar::SpawnRigidMesh(const tVector & rootPos, const std::vector<btScalar> & vertices, const std::vector<int> & indizes, const std::vector<float> & normals, const std::vector<float>& uvs)
 {
 	std::shared_ptr<cSimRigidMesh> simMesh = std::shared_ptr<cSimRigidMesh>(new cSimRigidMesh());
 
 	cSimRigidMesh::tParams params;
+	params.mPos = rootPos;
 	params.mVertices = vertices;
 	params.mIndizes = indizes;
 	params.mNormals = normals;

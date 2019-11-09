@@ -1,5 +1,8 @@
 #include "DrawObj.h"
 #include "sim/SimRigidMesh.h"
+#include <iostream>
+#include <iomanip>
+
 
 void cDrawObj::Draw(const cSimObj* obj, cDrawUtil::eDrawMode draw_mode)
 {
@@ -124,6 +127,19 @@ void cDrawObj::DrawMesh(const cSimObj* cap, cDrawUtil::eDrawMode draw_mode)
 
 	tVector pos = cap->GetPos();
 	cDrawUtil::Translate(pos);
+
+	// debug pos & AABB
+	/*
+	btVector3 aabbMin, aabbMax;
+	((cSimRigidMesh*)cap)->GetSimBody()->getAabb(aabbMin, aabbMax);
+
+	std::cout << std::setprecision(3) \
+			  << "DrawMesh: " << pos.x() << ", " << pos.y() << ", " << pos.z() \
+	          << " AABB x=[" << aabbMin.x() << "," << aabbMax.x() << "] dx=" << aabbMax.x()-aabbMin.x() \
+	          << " y=[" << aabbMin.y() << "," << aabbMax.y() << "] dy=" << aabbMax.y() - aabbMin.y() \
+			  << " z=[" << aabbMin.z() << "," << aabbMax.z() << "] dz=" << aabbMax.z() - aabbMin.z() \
+			  << std::endl;
+	*/
 
 	GLenum gl_mode = (draw_mode == cDrawUtil::eDrawMode::eDrawSolid) ? GL_TRIANGLES : GL_LINES;
 	auto mesh = ((cSimRigidMesh*)cap)->GetDrawMesh();
