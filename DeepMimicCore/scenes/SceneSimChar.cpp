@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <ctime>
+#include <algorithm>
 
 #include <Alembic/Abc/All.h>
 #include <Alembic/AbcCoreAbstract/All.h>
@@ -75,9 +76,9 @@ namespace serializeSceneSimChar {
 			auto& i2 = mattressShape.indices[i * 3 + 2];
 
 			// invert index order to convert handedness
-			indices.push_back(i2);
-			indices.push_back(i1);
 			indices.push_back(i0);
+			indices.push_back(i1);
+			indices.push_back(i2);
 		}
 
 		std::vector<Alembic::Abc::int32_t> faceCounts;
@@ -790,6 +791,8 @@ void cSceneSimChar::UpdateRandPerturb(double time_step)
 	}
 }
 
+
+
 void cSceneSimChar::ResetScene()
 {
 	cScene::ResetScene();
@@ -851,7 +854,7 @@ void cSceneSimChar::ResetScene()
 		auto rootTransformTranslation = rootTransformSample.getTranslation() / 100.0;
 		//auto rootPos = tVector(rootTransformTranslation.x, rootTransformTranslation.y, rootTransformTranslation.z, 0);
 
-		auto rootPos = tVector(-1, 0.44, 0, 0);
+		auto rootPos = tVector(-2, 0.06, -0.2, 0);
 
 		std::cout << " found rootTransform with position " << std::endl << rootTransformSample.getTranslation() << std::endl;
 
@@ -883,16 +886,28 @@ void cSceneSimChar::ResetScene()
 
 		std::vector<int32_t> indices;
 
+		std::vector<int32_t> indexCount(numVertices);
+
+		std::vector<std::vector<int32_t>> adjacencies(numVertices);
+
 		for (int i = 0; i < numIndizes / 3; ++i)
 		{
 			auto & i0 = indexPtr[i*3+0];
 			auto & i1 = indexPtr[i*3+1];
 			auto & i2 = indexPtr[i*3+2];
 
+			indexCount[i0]++;
+			indexCount[i1]++;
+			indexCount[i2]++;
+
+			adjacencies[i0].push_back(i1);
+			adjacencies[i1].push_back(i2);
+			adjacencies[i2].push_back(i0);
+
 			// invert index order to convert handedness
-			indices.push_back(i2);
-			indices.push_back(i1);
 			indices.push_back(i0);
+			indices.push_back(i1);
+			indices.push_back(i2);
 		}
 
 		std::vector<float> normals((float*)normalsArray->get(), (float*)(normalsArray->get() + normalsArray->size()));
@@ -908,6 +923,33 @@ void cSceneSimChar::ResetScene()
 
 		std::cout << " pos min: " << *posMinMax.first << " max: " << *posMinMax.second << std::endl;
 		std::cout << " idx min: " << *idxMinMax.first << " max: " << *idxMinMax.second << std::endl;
+		std::cout << " idx histogram:" << std::endl;
+		for (int i = 0; i < numVertices; ++i)
+		{
+			std::cout << " " << i << ": " << indexCount[i] << std::endl;
+		}
+		std::cout << " vertex adjacencies:" << std::endl;
+		for (int32_t i = 0; i < numVertices; ++i)
+		{
+			std::cout << " " << i << ": ";
+			for (auto& adj : adjacencies[i])
+			{
+				std::cout << adj;
+
+				auto& reverse = adjacencies[adj];
+				auto found = std::find(reverse.begin(), reverse.end(), i);
+				if (found == reverse.end())
+				{
+					std::cout << "! ";
+				}
+				else
+				{
+					std::cout << ", ";
+				}
+			}
+			std::cout << std::endl;
+		}
+
 		std::cout << " norm min: " << *normMinMax.first << " max: " << *normMinMax.second << std::endl;
 		std::cout << " uv min: " << *uvMinMax.first << " max: " << *uvMinMax.second << std::endl;
 

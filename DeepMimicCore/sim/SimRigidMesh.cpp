@@ -7,8 +7,8 @@
 cSimRigidMesh::tParams::tParams()
 {
 	mType = eTypeDynamic;
-	mMass = 10;
-	mFriction = 0.7;
+	mMass = 1;
+	mFriction = 0.5;
 	mUseQuantizedAabbCompression = false;
 
 	mPos = tVector(0, 0, 0, 0);
@@ -61,7 +61,7 @@ void cSimRigidMesh::Init(const std::shared_ptr<cWorld>& world, const tParams& pa
 
 
 	// debug vertex buffer
-	/*
+
 	std::cout << "vertices: " << std::endl;
 
 	for (int i = 0; i < mVertices.size(); ++i) {
@@ -78,10 +78,10 @@ void cSimRigidMesh::Init(const std::shared_ptr<cWorld>& world, const tParams& pa
 			std::cout << ",";
 	}
 	std::cout << std::endl;
-	*/
+
 
 	// debug index buffer
-	/*
+
 	std::cout << "indizes: " << std::endl;
 
 	for (int i = 0; i < mIndizes.size(); ++i) {
@@ -99,7 +99,7 @@ void cSimRigidMesh::Init(const std::shared_ptr<cWorld>& world, const tParams& pa
 	}
 
 	std::cout << std::endl;
-	*/
+
 
 	// scale vertex buffer by world scale
 	std::vector<btScalar> scaledVertices;
@@ -113,7 +113,7 @@ void cSimRigidMesh::Init(const std::shared_ptr<cWorld>& world, const tParams& pa
 	mColShape = std::unique_ptr<btCollisionShape>(convexHull);
 
 	// debug convex hull
-	/*
+
 	std::cout << "convex Hull vertices:" << std::endl;
 
 	for (int i = 0; i < convexHull->getNumVertices(); ++i)
@@ -123,7 +123,9 @@ void cSimRigidMesh::Init(const std::shared_ptr<cWorld>& world, const tParams& pa
 
 		std::cout << vertex.x() << ", " << vertex.y() << ", " << vertex.z() << std::endl;
 	}
-	*/
+
+
+
 
 	btVector3 inertia(0, 0, 0);
 	mColShape->calculateLocalInertia(mass, inertia);
@@ -155,6 +157,13 @@ void cSimRigidMesh::Init(const std::shared_ptr<cWorld>& world, const tParams& pa
 
 	std::cout << "mWorld->GetScale()" << world->GetScale() << std::endl;
 	*/
+
+	// debug AABB
+
+	tVector3 aabbMin, aabbMax;
+	CalcAABB(aabbMin, aabbMax);
+
+	std::cout << "AABB: [" << aabbMin.x() << " - " << aabbMax.x() << " ] [" << aabbMin.y() << " - " << aabbMax.y() << "] [" << aabbMin.z() << " - " << aabbMax.z() << "]" << std::endl;
 }
 
 tVector cSimRigidMesh::GetSize() const

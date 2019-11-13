@@ -25,5 +25,6 @@
 --model_files data/policies/humanoid3d/humanoid3d_backflip.ckpt
 
 
---mattress_input_path data/props/cube_mattress_exports_03.abc
+--mattress_input_path data/props/mattress_05_mattressShapeExport.abc
 --mattress_output_path mattress.abc
+--alembic_output_path character.abc
