@@ -140,12 +140,14 @@ void cSimRigidMesh::Init(const std::shared_ptr<cWorld>& world, const tParams& pa
 	SetRotation(params.mRot);
 
 	// debug transform
-	/*
+
 	auto worldTransform = mSimBody->getWorldTransform();
 	btScalar transform[16];
 	worldTransform.getOpenGLMatrix(transform);
 
 	std::cout << " pos: " <<  params.mPos.x() << ", " << params.mPos.y() << ", " << params.mPos.z() << std::endl;
+	std::cout << " rot:" << std::endl << params.mRot.toRotationMatrix() << std::endl;
+
 	std::cout << " worldT: " << std::endl;
 
 	for (int i = 0; i < 16; ++i)
@@ -155,8 +157,6 @@ void cSimRigidMesh::Init(const std::shared_ptr<cWorld>& world, const tParams& pa
 			std::cout << std::endl;
 	}
 
-	std::cout << "mWorld->GetScale()" << world->GetScale() << std::endl;
-	*/
 
 	// debug AABB
 

@@ -30,50 +30,67 @@ namespace serializeSceneSimChar {
 		std::vector<int32_t> indices;
 		std::vector<float> normals;
 		std::vector<float> uvs;
-	} shape_t;
+	} tShape;
 
+	typedef struct rigidBodyRecording {
+		std::string name;
+		int handle = 0;
+		tShape shape;
+		std::vector<tMatrix> frames;
 
-	int mattressHandle = 0;
-	shape_t mattressShape;
-	std::vector<tMatrix> frames(0);
+		void serializeFrameCache(Alembic::Abc::OArchive& archive) const;
+	} tRigidBodyRecording;
+
+	typedef struct softBodyRecording {
+		int handle = 0;
+		tShape shape;
+		std::vector<std::vector<btScalar>> frames;
+	} tSoftBodyRecording;
+
 	double timePassed = 0;
 
-
-	double frameDuration()
-	{
-		return timePassed / frames.size();
-	}
+	std::vector<tRigidBodyRecording> rigidBodyRecordings;
+	tSoftBodyRecording softBodyRecording;
 
 	void serializeFrameCache(Alembic::Abc::OArchive& archive)
 	{
-		auto timeSampling = Alembic::AbcCoreAbstract::TimeSampling(frameDuration(), 0.0f);
+		for (const auto & rigidBodyRecoding : rigidBodyRecordings)
+		{
+			rigidBodyRecoding.serializeFrameCache(archive);
+		}
+	}
+
+	void tRigidBodyRecording::serializeFrameCache(Alembic::Abc::OArchive& archive) const
+	{
+		auto frameDuration = timePassed / frames.size();
+		auto timeSampling = Alembic::AbcCoreAbstract::TimeSampling(frameDuration, 0.0f);
 		auto timeSamplingIdx = archive.addTimeSampling(timeSampling);
 
-		auto rootXform = Alembic::AbcGeom::OXform(archive.getTop(), "mattress_col_root");
-		auto shape = Alembic::AbcGeom::OPolyMesh(rootXform, "mattress_col_rootShape");
+		auto abcXform = Alembic::AbcGeom::OXform(archive.getTop(), name);
+		auto abcShape = Alembic::AbcGeom::OPolyMesh(abcXform, name + "Shape");
 
-		rootXform.getSchema().setTimeSampling(timeSamplingIdx);
-		shape.getSchema().setTimeSampling(timeSamplingIdx);
-		shape.getSchema().setUVSourceName("uv");
+		abcXform.getSchema().setTimeSampling(timeSamplingIdx);
+		abcShape.getSchema().setTimeSampling(timeSamplingIdx);
+		abcShape.getSchema().setUVSourceName("uv");
 
 		std::vector<Alembic::Abc::V3f> vertices;
-		for (int i = 0; i < mattressShape.vertices.size() / 3; ++i)
+		for (int i = 0; i < shape.vertices.size() / 3; ++i)
 		{
 			// scale by 100 to make cm unit export work between c4d and bullet
 
-			auto x = mattressShape.vertices[i * 3 + 0];// *100.0;
-			auto y = mattressShape.vertices[i * 3 + 1];// *100.0;
-			auto z = mattressShape.vertices[i * 3 + 2];// *100.0;
+			auto x = shape.vertices[i * 3 + 0];// *100.0;
+			auto y = shape.vertices[i * 3 + 1];// *100.0;
+			auto z = shape.vertices[i * 3 + 2];// *100.0;
 
 			vertices.push_back(Alembic::Abc::V3f(x, y, z));
 		}
 
 		std::vector<Alembic::Abc::int32_t> indices;
-		for (int i = 0; i < mattressShape.indices.size() / 3; ++i)
+		for (int i = 0; i < shape.indices.size() / 3; ++i)
 		{
-			auto& i0 = mattressShape.indices[i * 3 + 0];
-			auto& i1 = mattressShape.indices[i * 3 + 1];
-			auto& i2 = mattressShape.indices[i * 3 + 2];
+			auto& i0 = shape.indices[i * 3 + 0];
+			auto& i1 = shape.indices[i * 3 + 1];
+			auto& i2 = shape.indices[i * 3 + 2];
 
 			// invert index order to convert handedness
 			indices.push_back(i0);
@@ -88,10 +105,10 @@ namespace serializeSceneSimChar {
 		}
 
 		std::vector<Alembic::Abc::V2f> uvs;
-		for (int i = 0; i < mattressShape.uvs.size() / 2; ++i)
+		for (int i = 0; i < shape.uvs.size() / 2; ++i)
 		{
-			auto u = mattressShape.uvs[i * 2 + 0];
-			auto v = mattressShape.uvs[i * 2 + 1];
+			auto u = shape.uvs[i * 2 + 0];
+			auto v = shape.uvs[i * 2 + 1];
 
 			uvs.push_back(Alembic::Abc::V2f(u, v));
 		}
@@ -103,11 +120,11 @@ namespace serializeSceneSimChar {
 			Alembic::AbcGeom::kFacevaryingScope);
 
 		std::vector<Alembic::Abc::N3f> normals;
-		for (int i = 0; i < mattressShape.normals.size() / 3; ++i)
+		for (int i = 0; i < shape.normals.size() / 3; ++i)
 		{
-			auto x = mattressShape.normals[i * 3 + 0];
-			auto y = mattressShape.normals[i * 3 + 1];
-			auto z = mattressShape.normals[i * 3 + 2];
+			auto x = shape.normals[i * 3 + 0];
+			auto y = shape.normals[i * 3 + 1];
+			auto z = shape.normals[i * 3 + 2];
 
 			normals.push_back(Alembic::Abc::N3f(x, y, z));
 		}
@@ -135,7 +152,7 @@ namespace serializeSceneSimChar {
 
 			Alembic::AbcGeom::XformSample xformSample;
 			xformSample.setMatrix(mat);
-			rootXform.getSchema().set(xformSample);
+			abcXform.getSchema().set(xformSample);
 
 			Alembic::AbcGeom::OPolyMeshSchema::Sample meshSample;
 
@@ -158,19 +175,15 @@ namespace serializeSceneSimChar {
 					)
 				);
 
-				
 				meshSample.setUVs(uvSample);
-
 				//meshSample.setNormals(normals);
 
 				firstFrame = false;
-
 			}
 
-			shape.getSchema().set(meshSample);
+			abcShape.getSchema().set(meshSample);
 		}
 	}
-
 }
 
 using namespace serializeSceneSimChar;
@@ -220,6 +233,8 @@ cSceneSimChar::cSceneSimChar()
 	mWorldParams.mScale = 1;
 	mWorldParams.mGravity = gGravity;
 
+	mRigidWorldInputPath = "";
+	mRigidWorldOutputPath = "";
 	mMattressInputPath = "";
 	mMattressOutputPath = "";
 }
@@ -262,6 +277,9 @@ void cSceneSimChar::ParseArgs(const std::shared_ptr<cArgParser>& parser)
 	parser->ParseInts("perturb_part_ids", mPerturbParams.mPerturbPartIDs);
 
 	parser->ParseInts("fall_contact_bodies", mFallContactBodies);
+
+	parser->ParseString("rigid_world_input_path", mRigidWorldInputPath);
+	parser->ParseString("rigid_world_output_path", mRigidWorldOutputPath);
 
 	parser->ParseString("mattress_input_path", mMattressInputPath);
 	parser->ParseString("mattress_output_path", mMattressOutputPath);
@@ -812,153 +830,183 @@ void cSceneSimChar::ResetScene()
 
 	std::cin.get();
 
-	if (frames.size() > 10)
+	if (rigidBodyRecordings.size() > 0 && !mRigidWorldOutputPath.empty())
 	{
-		std::cout << "cSceneSimChar::ResetScene " << frames.size() \
-			<< " frames in " << timePassed \
-			<< " seconds, per frame " << frameDuration() \
-			<< " writing to " << mMattressOutputPath << std::endl;
+		if (timePassed > 0.1)
+		{
+			auto framesRecorded = rigidBodyRecordings[0].frames.size();
+			auto frameDuration = timePassed / framesRecorded;
 
-		auto archive = Alembic::Abc::OArchive(
-			Alembic::AbcCoreOgawa::WriteArchive(),
-			mMattressOutputPath,
-			Alembic::Abc::ErrorHandler::kThrowPolicy);
+			std::cout << "cSceneSimChar::ResetScene " << framesRecorded \
+				<< " frames in " << timePassed \
+				<< " seconds, per frame " << frameDuration \
+				<< " writing to " << mRigidWorldOutputPath << std::endl;
 
-		serializeFrameCache(archive);
+			auto archive = Alembic::Abc::OArchive(
+				Alembic::AbcCoreOgawa::WriteArchive(),
+				mRigidWorldOutputPath,
+				Alembic::Abc::ErrorHandler::kThrowPolicy);
+
+			serializeFrameCache(archive);
+		}
 	}
 
-	frames.clear();
+	rigidBodyRecordings.clear();
 	timePassed = 0;
 
-	if (!mMattressInputPath.empty())
+	if (!mRigidWorldInputPath.empty())
 	{
+		std::cout << "cSceneSimChar::ResetScene reading rigid world from " << mRigidWorldInputPath << std::endl;
+
 		auto archive = Alembic::Abc::IArchive(
 			Alembic::AbcCoreOgawa::ReadArchive(),
-			mMattressInputPath,
+			mRigidWorldInputPath,
 			Alembic::Abc::ErrorHandler::kThrowPolicy);
 
-		std::cout << "cSceneSimChar::ResetScene reading from " << mMattressInputPath << std::endl;
-
-		auto rootTransform = Alembic::AbcGeom::IXform(archive.getTop(), "mattress_col_root");
-		auto polyMesh = Alembic::AbcGeom::IPolyMesh(rootTransform, "mattress_col_rootShape");
-
-		Alembic::AbcCoreAbstract::index_t lastIndexRootTransform = rootTransform.getSchema().getNumSamples() - 1;
-		auto lastSampleSelectorRootTransform = Alembic::Abc::ISampleSelector(lastIndexRootTransform);
-
-		Alembic::AbcCoreAbstract::index_t lastIndex = polyMesh.getSchema().getNumSamples() - 1;
-		auto lastSampleSelectorMesh = Alembic::Abc::ISampleSelector(lastIndex);
-
-		Alembic::AbcGeom::XformSample rootTransformSample;
-		rootTransform.getSchema().get(rootTransformSample, lastSampleSelectorRootTransform);
-
-		auto rootTransformTranslation = rootTransformSample.getTranslation() / 100.0;
-		//auto rootPos = tVector(rootTransformTranslation.x, rootTransformTranslation.y, rootTransformTranslation.z, 0);
-
-		auto rootPos = tVector(-2, 0.06, -0.2, 0);
-
-		std::cout << " found rootTransform with position " << std::endl << rootTransformSample.getTranslation() << std::endl;
-
-		Alembic::AbcGeom::IPolyMeshSchema::Sample meshSample;
-		polyMesh.getSchema().get(meshSample, lastSampleSelectorMesh);
-
-		int numVertices = meshSample.getPositions()->size();
-		int numIndizes = meshSample.getFaceIndices()->size();
-
-		auto vertexPtr = meshSample.getPositions()->get();
-		auto indexPtr = meshSample.getFaceIndices()->get();
-
-		auto normalsArray = polyMesh.getSchema().getNormalsParam().getExpandedValue().getVals();
-		auto uvsArray = polyMesh.getSchema().getUVsParam().getExpandedValue().getVals();
-
-		std::cout << " found " << numVertices << " vertices with " << numIndizes << " indizes and " <<
-			normalsArray->size() << " normals " << uvsArray->size() << " uvs" << std::endl;
-		
-		std::vector<btScalar> vertices;
-
-		for (int i = 0; i < numVertices; ++i)
+		for (int i = 0; i < archive.getTop().getNumChildren(); ++i)
 		{
-			// scale by 100 to make cm unit export work between c4d and bullet
-			auto & vec3 = vertexPtr[i] / 100.0;
-			vertices.push_back(vec3.x);
-			vertices.push_back(vec3.y);
-			vertices.push_back(vec3.z);
-		}
+			auto rigidBodyRoot = archive.getTop().getChild(i);
+			auto rigidBodyName = rigidBodyRoot.getName();
+			auto rigidBodyShapeName = rigidBodyRoot.getChild(0).getName();
+			std::cout << " found rigidBody " << rigidBodyName << " with shape " << rigidBodyShapeName << std::endl;
 
-		std::vector<int32_t> indices;
+			auto rootTransform = Alembic::AbcGeom::IXform(archive.getTop(), rigidBodyName);
+			auto polyMesh = Alembic::AbcGeom::IPolyMesh(rigidBodyRoot, rigidBodyShapeName);
 
-		std::vector<int32_t> indexCount(numVertices);
+			Alembic::AbcCoreAbstract::index_t lastIndexRootTransform = rootTransform.getSchema().getNumSamples() - 1;
+			auto lastSampleSelectorRootTransform = Alembic::Abc::ISampleSelector(lastIndexRootTransform);
 
-		std::vector<std::vector<int32_t>> adjacencies(numVertices);
+			Alembic::AbcCoreAbstract::index_t lastIndex = polyMesh.getSchema().getNumSamples() - 1;
+			auto lastSampleSelectorMesh = Alembic::Abc::ISampleSelector(lastIndex);
 
-		for (int i = 0; i < numIndizes / 3; ++i)
-		{
-			auto & i0 = indexPtr[i*3+0];
-			auto & i1 = indexPtr[i*3+1];
-			auto & i2 = indexPtr[i*3+2];
+			Alembic::AbcGeom::XformSample rootTransformSample;
+			rootTransform.getSchema().get(rootTransformSample, lastSampleSelectorRootTransform);
 
-			indexCount[i0]++;
-			indexCount[i1]++;
-			indexCount[i2]++;
+			auto rootTransformTranslation = rootTransformSample.getTranslation();
+			auto rootPos = tVector(rootTransformTranslation.x, rootTransformTranslation.y, rootTransformTranslation.z, 0);
+			auto rootRot = Eigen::AngleAxisd(
+				rootTransformSample.getAngle(),
+				Eigen::Vector3d(
+					rootTransformSample.getAxis().x,
+					rootTransformSample.getAxis().y,
+					rootTransformSample.getAxis().z));
+			auto rootTransformScale = rootTransformSample.getScale();
+			auto rootScale = tVector(rootTransformScale.x, rootTransformScale.y, rootTransformScale.z, 1.0);
 
-			adjacencies[i0].push_back(i1);
-			adjacencies[i1].push_back(i2);
-			adjacencies[i2].push_back(i0);
+			Eigen::IOFormat InlineVectorFmt(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", ", ", "", "", "(", ")");
+			std::cout << " found rootTransform with:" << std::endl \
+				<< "  pos: " << rootPos.format(InlineVectorFmt) << std::endl \
+				<< "  rot: " << rootRot.angle() << " @ " << rootRot.axis().format(InlineVectorFmt) << std::endl \
+				<< "  sca: " << rootScale.format(InlineVectorFmt) << std::endl;
 
-			// invert index order to convert handedness
-			indices.push_back(i0);
-			indices.push_back(i1);
-			indices.push_back(i2);
-		}
+			// offset
+			rootPos = tVector(-2, 0.06, -0.2, 0) + rootPos / 100;
 
-		std::vector<float> normals((float*)normalsArray->get(), (float*)(normalsArray->get() + normalsArray->size()));
-		std::vector<float> uvs((float*)uvsArray->get(), (float*)(uvsArray->get() + uvsArray->size()));
+			Alembic::AbcGeom::IPolyMeshSchema::Sample meshSample;
+			polyMesh.getSchema().get(meshSample, lastSampleSelectorMesh);
 
-		std::cout << " copied " << vertices.size() / 3 << " vertices with " << indices.size() << " indizes and " <<
-			normals.size() / 3 << " normals " << uvs.size() / 2 << " uvs " << std::endl;
+			int numVertices = meshSample.getPositions()->size();
+			int numIndizes = meshSample.getFaceIndices()->size();
 
-		auto posMinMax = std::minmax_element(vertices.begin(), vertices.end());
-		auto idxMinMax = std::minmax_element(indices.begin(), indices.end());
-		auto normMinMax = std::minmax_element(normals.begin(), normals.end());
-		auto uvMinMax = std::minmax_element(uvs.begin(), uvs.end());
+			auto vertexPtr = meshSample.getPositions()->get();
+			auto indexPtr = meshSample.getFaceIndices()->get();
 
-		std::cout << " pos min: " << *posMinMax.first << " max: " << *posMinMax.second << std::endl;
-		std::cout << " idx min: " << *idxMinMax.first << " max: " << *idxMinMax.second << std::endl;
-		std::cout << " idx histogram:" << std::endl;
-		for (int i = 0; i < numVertices; ++i)
-		{
-			std::cout << " " << i << ": " << indexCount[i] << std::endl;
-		}
-		std::cout << " vertex adjacencies:" << std::endl;
-		for (int32_t i = 0; i < numVertices; ++i)
-		{
-			std::cout << " " << i << ": ";
-			for (auto& adj : adjacencies[i])
+			auto normalsArray = polyMesh.getSchema().getNormalsParam().getExpandedValue().getVals();
+			auto uvsArray = polyMesh.getSchema().getUVsParam().getExpandedValue().getVals();
+
+			std::cout << " found " << numVertices << " vertices with " << numIndizes << " indizes and " <<
+				normalsArray->size() << " normals " << uvsArray->size() << " uvs" << std::endl;
+
+			std::vector<btScalar> vertices;
+
+			for (int i = 0; i < numVertices; ++i)
 			{
-				std::cout << adj;
-
-				auto& reverse = adjacencies[adj];
-				auto found = std::find(reverse.begin(), reverse.end(), i);
-				if (found == reverse.end())
-				{
-					std::cout << "! ";
-				}
-				else
-				{
-					std::cout << ", ";
-				}
+				// scale by 100 to make cm unit export work between c4d and bullet
+				auto& vec3 = vertexPtr[i] / 100.0;
+				vertices.push_back(vec3.x);
+				vertices.push_back(vec3.y);
+				vertices.push_back(vec3.z);
 			}
-			std::cout << std::endl;
+
+			std::vector<int32_t> indices;
+
+			std::vector<int32_t> indexCount(numVertices);
+
+			std::vector<std::vector<int32_t>> adjacencies(numVertices);
+
+			for (int i = 0; i < numIndizes / 3; ++i)
+			{
+				auto& i0 = indexPtr[i * 3 + 0];
+				auto& i1 = indexPtr[i * 3 + 1];
+				auto& i2 = indexPtr[i * 3 + 2];
+
+				indexCount[i0]++;
+				indexCount[i1]++;
+				indexCount[i2]++;
+
+				adjacencies[i0].push_back(i1);
+				adjacencies[i1].push_back(i2);
+				adjacencies[i2].push_back(i0);
+
+				// invert index order to convert handedness
+				indices.push_back(i0);
+				indices.push_back(i1);
+				indices.push_back(i2);
+			}
+
+			std::vector<float> normals((float*)normalsArray->get(), (float*)(normalsArray->get() + normalsArray->size()));
+			std::vector<float> uvs((float*)uvsArray->get(), (float*)(uvsArray->get() + uvsArray->size()));
+
+			std::cout << " copied " << vertices.size() / 3 << " vertices with " << indices.size() << " indizes and " <<
+				normals.size() / 3 << " normals " << uvs.size() / 2 << " uvs " << std::endl;
+
+			auto posMinMax = std::minmax_element(vertices.begin(), vertices.end());
+			auto idxMinMax = std::minmax_element(indices.begin(), indices.end());
+			auto normMinMax = std::minmax_element(normals.begin(), normals.end());
+			auto uvMinMax = std::minmax_element(uvs.begin(), uvs.end());
+
+			std::cout << " pos min: " << *posMinMax.first << " max: " << *posMinMax.second << std::endl;
+			std::cout << " idx min: " << *idxMinMax.first << " max: " << *idxMinMax.second << std::endl;
+			std::cout << " idx histogram:" << std::endl;
+			for (int i = 0; i < numVertices; ++i)
+			{
+				std::cout << " " << i << ": " << indexCount[i] << std::endl;
+			}
+			std::cout << " vertex adjacencies:" << std::endl;
+			for (int32_t i = 0; i < numVertices; ++i)
+			{
+				std::cout << " " << i << ": ";
+				for (auto& adj : adjacencies[i])
+				{
+					std::cout << adj;
+
+					auto& reverse = adjacencies[adj];
+					auto found = std::find(reverse.begin(), reverse.end(), i);
+					if (found == reverse.end())
+					{
+						std::cout << "! ";
+					}
+					else
+					{
+						std::cout << ", ";
+					}
+				}
+				std::cout << std::endl;
+			}
+
+			std::cout << " norm min: " << *normMinMax.first << " max: " << *normMinMax.second << std::endl;
+			std::cout << " uv min: " << *uvMinMax.first << " max: " << *uvMinMax.second << std::endl;
+
+			tRigidBodyRecording recording;
+			recording.name = rigidBodyName;
+			recording.shape.vertices = vertices;
+			recording.shape.indices = indices;
+			recording.shape.normals = normals;
+			recording.shape.uvs = uvs;
+			recording.handle = SpawnRigidMesh(rootPos, tQuaternion(rootRot), vertices, indices, normals, uvs);
+
+			rigidBodyRecordings.push_back(recording);
 		}
-
-		std::cout << " norm min: " << *normMinMax.first << " max: " << *normMinMax.second << std::endl;
-		std::cout << " uv min: " << *uvMinMax.first << " max: " << *uvMinMax.second << std::endl;
-
-		mattressShape.vertices = vertices;
-		mattressShape.indices = indices;
-		mattressShape.normals = normals;
-		mattressShape.uvs = uvs;
-
-		mattressHandle = SpawnRigidMesh(rootPos, vertices, indices, normals, uvs);
 	}
 }
 
@@ -1004,15 +1052,28 @@ void cSceneSimChar::PreUpdate(double timestep)
 
 void cSceneSimChar::PostUpdate(double timestep)
 {
+	if (!mRigidWorldInputPath.empty() && !mRigidWorldOutputPath.empty())
+	{
+		for (auto& rigidBody : rigidBodyRecordings)
+		{
+
+			auto mesh = std::dynamic_pointer_cast<cSimRigidMesh>(GetObj(rigidBody.handle));
+			auto worldTransform = mesh->GetWorldTransform();
+
+			rigidBody.frames.push_back(worldTransform);
+		}
+	}
 	if (!mMattressInputPath.empty() && !mMattressOutputPath.empty())
 	{
+		/*
 		auto mesh = std::dynamic_pointer_cast<cSimRigidMesh>(GetObj(mattressHandle));
 		auto worldTransform = mesh->GetWorldTransform();
 
 		frames.push_back(worldTransform);
-
-		timePassed += timestep;
+		*/
 	}
+
+	timePassed += timestep;
 }
 
 void cSceneSimChar::GetViewBound(tVector& out_min, tVector& out_max) const
@@ -1272,12 +1333,13 @@ void cSceneSimChar::SpawnProjectile(double density, double min_size, double max_
 	AddObj(obj_entry);
 }
 
-int cSceneSimChar::SpawnRigidMesh(const tVector & rootPos, const std::vector<btScalar> & vertices, const std::vector<int> & indizes, const std::vector<float> & normals, const std::vector<float>& uvs)
+int cSceneSimChar::SpawnRigidMesh(const tVector & rootPos, const tQuaternion & rootRot, const std::vector<btScalar> & vertices, const std::vector<int> & indizes, const std::vector<float> & normals, const std::vector<float>& uvs)
 {
 	std::shared_ptr<cSimRigidMesh> simMesh = std::shared_ptr<cSimRigidMesh>(new cSimRigidMesh());
 
 	cSimRigidMesh::tParams params;
 	params.mPos = rootPos;
+	params.mRot = rootRot;
 	params.mVertices = vertices;
 	params.mIndizes = indizes;
 	params.mNormals = normals;

@@ -112,6 +112,8 @@ protected:
 	cGround::tParams mGroundParams;
 	tPerturbParams mPerturbParams;
 
+	std::string mRigidWorldInputPath;
+	std::string mRigidWorldOutputPath;
 	std::string mMattressInputPath;
 	std::string mMattressOutputPath;
 
@@ -172,6 +174,7 @@ protected:
 
 	virtual int SpawnRigidMesh(
 		const tVector& rootPos,
+		const tQuaternion& rootRot,
 		const std::vector<btScalar>& vertices,
 		const std::vector<int32_t>& indizes,
 		const std::vector<float>& normals,

@@ -124,9 +124,8 @@ void cDrawObj::DrawMesh(const cSimObj* cap, cDrawUtil::eDrawMode draw_mode)
 	assert(cap->GetShape() == cShape::eShapeMesh);
 
 	cDrawUtil::PushMatrixView();
-
-	tVector pos = cap->GetPos();
-	cDrawUtil::Translate(pos);
+	cDrawUtil::Translate(cap->GetPos());
+	cDrawUtil::Rotate(cap->GetRotation());
 
 	// debug pos & AABB
 	/*
