@@ -61,7 +61,7 @@ void cSimRigidMesh::Init(const std::shared_ptr<cWorld>& world, const tParams& pa
 
 
 	// debug vertex buffer
-
+	/*
 	std::cout << "vertices: " << std::endl;
 
 	for (int i = 0; i < mVertices.size(); ++i) {
@@ -78,10 +78,10 @@ void cSimRigidMesh::Init(const std::shared_ptr<cWorld>& world, const tParams& pa
 			std::cout << ",";
 	}
 	std::cout << std::endl;
-
+	*/
 
 	// debug index buffer
-
+	/*
 	std::cout << "indizes: " << std::endl;
 
 	for (int i = 0; i < mIndizes.size(); ++i) {
@@ -97,9 +97,8 @@ void cSimRigidMesh::Init(const std::shared_ptr<cWorld>& world, const tParams& pa
 		else
 			std::cout << ",";
 	}
-
 	std::cout << std::endl;
-
+	*/
 
 	// scale vertex buffer by world scale
 	std::vector<btScalar> scaledVertices;
@@ -113,7 +112,7 @@ void cSimRigidMesh::Init(const std::shared_ptr<cWorld>& world, const tParams& pa
 	mColShape = std::unique_ptr<btCollisionShape>(convexHull);
 
 	// debug convex hull
-
+	/*
 	std::cout << "convex Hull vertices:" << std::endl;
 
 	for (int i = 0; i < convexHull->getNumVertices(); ++i)
@@ -123,9 +122,8 @@ void cSimRigidMesh::Init(const std::shared_ptr<cWorld>& world, const tParams& pa
 
 		std::cout << vertex.x() << ", " << vertex.y() << ", " << vertex.z() << std::endl;
 	}
-
-
-
+	std::cout << std::endl;
+	*/
 
 	btVector3 inertia(0, 0, 0);
 	mColShape->calculateLocalInertia(mass, inertia);

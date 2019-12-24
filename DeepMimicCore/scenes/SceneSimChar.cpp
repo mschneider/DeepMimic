@@ -918,7 +918,6 @@ void cSceneSimChar::ResetScene()
 				normalsArray->size() << " normals " << uvsArray->size() << " uvs" << std::endl;
 
 			std::vector<btScalar> vertices;
-
 			for (int i = 0; i < numVertices; ++i)
 			{
 				// scale by 100 to make cm unit export work between c4d and bullet
@@ -929,11 +928,8 @@ void cSceneSimChar::ResetScene()
 			}
 
 			std::vector<int32_t> indices;
-
 			std::vector<int32_t> indexCount(numVertices);
-
 			std::vector<std::vector<int32_t>> adjacencies(numVertices);
-
 			for (int i = 0; i < numIndizes / 3; ++i)
 			{
 				auto& i0 = indexPtr[i * 3 + 0];
@@ -948,7 +944,6 @@ void cSceneSimChar::ResetScene()
 				adjacencies[i1].push_back(i2);
 				adjacencies[i2].push_back(i0);
 
-				// invert index order to convert handedness
 				indices.push_back(i0);
 				indices.push_back(i1);
 				indices.push_back(i2);
@@ -965,6 +960,7 @@ void cSceneSimChar::ResetScene()
 			auto normMinMax = std::minmax_element(normals.begin(), normals.end());
 			auto uvMinMax = std::minmax_element(uvs.begin(), uvs.end());
 
+			/*
 			std::cout << " pos min: " << *posMinMax.first << " max: " << *posMinMax.second << std::endl;
 			std::cout << " idx min: " << *idxMinMax.first << " max: " << *idxMinMax.second << std::endl;
 			std::cout << " idx histogram:" << std::endl;
@@ -972,6 +968,9 @@ void cSceneSimChar::ResetScene()
 			{
 				std::cout << " " << i << ": " << indexCount[i] << std::endl;
 			}
+			*/
+			
+			/*
 			std::cout << " vertex adjacencies:" << std::endl;
 			for (int32_t i = 0; i < numVertices; ++i)
 			{
@@ -993,6 +992,7 @@ void cSceneSimChar::ResetScene()
 				}
 				std::cout << std::endl;
 			}
+			*/
 
 			std::cout << " norm min: " << *normMinMax.first << " max: " << *normMinMax.second << std::endl;
 			std::cout << " uv min: " << *uvMinMax.first << " max: " << *uvMinMax.second << std::endl;
