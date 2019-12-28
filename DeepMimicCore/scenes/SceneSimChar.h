@@ -172,13 +172,8 @@ protected:
 	virtual void SpawnProjectile(double density, double min_size, double max_size,
 									double min_speed, double max_speed, double y_offset, double life_time);
 
-	virtual int SpawnRigidMesh(
-		const tVector& rootPos,
-		const tQuaternion& rootRot,
-		const std::vector<btScalar>& vertices,
-		const std::vector<int32_t>& indizes,
-		const std::vector<float>& normals,
-		const std::vector<float>& uvs);
+	virtual int SpawnRigidMesh(void*);
+	virtual int SpawnSoftMesh(void*);
 
 	virtual void ResetRandPertrub();
 };
