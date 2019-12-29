@@ -1,8 +1,9 @@
 #include "DrawObj.h"
-#include "sim/SimRigidMesh.h"
 #include <iostream>
 #include <iomanip>
 
+#include "sim/SimRigidMesh.h"
+#include "sim/SimSoftBody.h"
 
 void cDrawObj::Draw(const cSimObj* obj, cDrawUtil::eDrawMode draw_mode)
 {
@@ -26,6 +27,10 @@ void cDrawObj::Draw(const cSimObj* obj, cDrawUtil::eDrawMode draw_mode)
 		break;
 	case cShape::eShapeMesh:
 		DrawMesh(obj, draw_mode);
+		break;
+	case cShape::eShapeSoft:
+		DrawSoft(obj, draw_mode);
+		break;
 	default:
 		assert(false); // unsupported shape
 		break;
@@ -142,6 +147,22 @@ void cDrawObj::DrawMesh(const cSimObj* cap, cDrawUtil::eDrawMode draw_mode)
 
 	GLenum gl_mode = (draw_mode == cDrawUtil::eDrawMode::eDrawSolid) ? GL_TRIANGLES : GL_LINES;
 	auto mesh = ((cSimRigidMesh*)cap)->GetDrawMesh();
+	mesh->Draw(gl_mode);
+
+	cDrawUtil::PopMatrixView();
+}
+
+void cDrawObj::DrawSoft(const cSimObj* cap, cDrawUtil::eDrawMode draw_mode)
+{
+	assert(cap->GetShape() == cShape::eShapeSoft);
+
+	cDrawUtil::PushMatrixView();
+	cDrawUtil::Translate(cap->GetPos());
+	cDrawUtil::Rotate(cap->GetRotation());
+
+
+	GLenum gl_mode = (draw_mode == cDrawUtil::eDrawMode::eDrawSolid) ? GL_TRIANGLES : GL_LINES;
+	auto mesh = ((cSimSoftBody*)cap)->GetDrawMesh();
 	mesh->Draw(gl_mode);
 
 	cDrawUtil::PopMatrixView();

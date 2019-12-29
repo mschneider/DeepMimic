@@ -61,8 +61,10 @@ void cWorld::Init(const tParams& params)
 
 	auto solver = new btMultiBodyConstraintSolver();
 	mSolver = std::unique_ptr<btSequentialImpulseConstraintSolver>(solver);
-	mSimWorld = std::unique_ptr<btMultiBodyDynamicsWorld>(new btSoftMultiBodyDynamicsWorld	(mCollisionDispatcher.get(),
-														mBroadPhase.get(), solver, mCollisionConfig.get()));
+
+	auto softWorld = new btSoftMultiBodyDynamicsWorld(mCollisionDispatcher.get(),
+		mBroadPhase.get(), solver, mCollisionConfig.get());
+	mSimWorld = std::unique_ptr<btMultiBodyDynamicsWorld>(softWorld);
 
 	btContactSolverInfo& info = mSimWorld->getSolverInfo();
 	info.m_solverMode = SOLVER_SIMD | SOLVER_USE_2_FRICTION_DIRECTIONS | SOLVER_FRICTION_SEPARATE | SOLVER_USE_WARMSTARTING;
@@ -439,6 +441,11 @@ std::unique_ptr<btMultiBodyDynamicsWorld>& cWorld::GetInternalWorld()
 const std::unique_ptr<btMultiBodyDynamicsWorld>& cWorld::GetInternalWorld() const
 {
 	return mSimWorld;
+}
+
+btMultiBodyDynamicsWorld* cWorld::GetInternalWorldPtr() const
+{
+	return mSimWorld.get();
 }
 
 int cWorld::GetNumConstriants() const

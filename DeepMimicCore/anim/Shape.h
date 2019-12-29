@@ -14,6 +14,7 @@ public:
 		eShapeCylinder,
 		eShapePlane,
 		eShapeMesh,
+		eShapeSoft,
 		eShapeMax,
 	};
 

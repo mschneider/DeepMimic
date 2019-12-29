@@ -103,6 +103,7 @@ public:
 	// yuck, avoid using this
 	std::unique_ptr<btMultiBodyDynamicsWorld>& GetInternalWorld();
 	const std::unique_ptr<btMultiBodyDynamicsWorld>& GetInternalWorld() const;
+	btMultiBodyDynamicsWorld* GetInternalWorldPtr() const;
 
 	// object interface
 	virtual btBoxShape* BuildBoxShape(const tVector& box_sizee) const;

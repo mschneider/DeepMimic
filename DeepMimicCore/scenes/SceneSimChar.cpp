@@ -11,6 +11,7 @@
 
 #include "sim/SimBox.h"
 #include "sim/SimRigidMesh.h"
+#include "sim/SimSoftBody.h"
 #include "sim/GroundPlane.h"
 #include "sim/GroundBuilder.h"
 #include "sim/DeepMimicCharController.h"
@@ -199,6 +200,7 @@ namespace serializeSceneSimChar {
 
 	std::vector<tRigidBodyRecording> rigidBodyRecordings;
 	tSoftBodyRecording softBodyRecording;
+	std::shared_ptr<cSimSoftBody> simSoftBody;
 
 	void tRigidBodyRecording::serializeFrameCache(Alembic::Abc::OArchive& archive) const
 	{
@@ -1419,9 +1421,9 @@ int cSceneSimChar::SpawnSoftMesh(void * _shape)
 	std::cout << "  NOT IMPLEMENTED YET int cSceneSimChar::SpawnSoftMesh(void * _shape)" << std::endl;
 
 	auto & shape = *(tMesh*)_shape;
-	std::shared_ptr<cSimRigidMesh> simMesh = std::shared_ptr<cSimRigidMesh>(new cSimRigidMesh());
+	simSoftBody = std::shared_ptr<cSimSoftBody>(new cSimSoftBody());
 
-	cSimRigidMesh::tParams params;
+	cSimSoftBody::tParams params;
 	params.mPos = shape.rootPos;
 	params.mRot = shape.rootRot;
 	params.mVertices = shape.vertices;
@@ -1429,14 +1431,16 @@ int cSceneSimChar::SpawnSoftMesh(void * _shape)
 	params.mNormals = shape.normals;
 	params.mUVs = shape.uvs;
 
-	simMesh->Init(mWorld, params);
-	simMesh->UpdateContact(cWorld::eContactFlagObject, cContactManager::gFlagNone);
-
+	simSoftBody->Init(mWorld, params);
+	simSoftBody->UpdateContact(cWorld::eContactFlagObject, cContactManager::gFlagNone);
+	/*
 	tObjEntry obj_entry;
-	obj_entry.mObj = simMesh;
+	obj_entry.mObj = simSoftBody;
 	obj_entry.mEndTime = std::numeric_limits<float>::max();
 
 	return AddObj(obj_entry);
+	*/
+	return 0xFF;
 }
 
 

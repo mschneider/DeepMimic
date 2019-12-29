@@ -15,4 +15,6 @@ public:
 	static void DrawSphere(const cSimObj* box, cDrawUtil::eDrawMode draw_mode = cDrawUtil::eDrawSolid);
 	static void DrawCylinder(const cSimObj* cylinder, cDrawUtil::eDrawMode draw_mode = cDrawUtil::eDrawSolid);
 	static void DrawMesh(const cSimObj* cap, cDrawUtil::eDrawMode draw_mode = cDrawUtil::eDrawSolid);
+	static void DrawSoft(const cSimObj* cap, cDrawUtil::eDrawMode draw_mode = cDrawUtil::eDrawSolid);
+
 };
