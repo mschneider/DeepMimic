@@ -133,7 +133,7 @@ protected:
 
 	std::unique_ptr<btConstraintSolver> mSolver;
 	std::unique_ptr<btCollisionDispatcher> mCollisionDispatcher;
-	std::unique_ptr<btDefaultCollisionConfiguration> mCollisionConfig;
+	std::unique_ptr<btCollisionConfiguration> mCollisionConfig;
 	std::unique_ptr<btBroadphaseInterface> mBroadPhase;
 
 	cContactManager mContactManager;

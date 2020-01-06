@@ -71,6 +71,7 @@ public:
 	virtual int GetNumObjs() const;
 	virtual const std::shared_ptr<cSimRigidBody>& GetObj(int id) const;
 	virtual const tObjEntry& GetObjEntry(int id) const;
+	virtual const cSimObj& GetSoftBody() const;
 
 	virtual void SetRandSeed(unsigned long seed);
 

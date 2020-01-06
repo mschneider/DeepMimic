@@ -100,6 +100,12 @@ void cSimSoftBody::SetRotation(const tQuaternion& q)
 	mSoftBody->setWorldTransform(trans);
 }
 
+
+const std::vector<btScalar>& cSimSoftBody::GetVertexPositions() const
+{
+	return mVertices;
+}
+
 tMatrix cSimSoftBody::GetWorldTransform() const
 {
 	const btTransform& bt_trans = mSoftBody->getWorldTransform();
@@ -175,9 +181,12 @@ void cSimSoftBody::Init(const std::shared_ptr<cWorld>& world, const tParams& par
 	mUVs = params.mUVs;
 
 	auto softWorld = (btSoftMultiBodyDynamicsWorld*)(world->GetInternalWorldPtr());
-	auto softWorldInfo = softWorld->getWorldInfo();
+	auto softWorldInfo = new btSoftBodyWorldInfo(softWorld->getWorldInfo());
+
+
+	/*
 	auto softBody = btSoftBodyHelpers::CreateFromTriMesh(
-		softWorldInfo,
+		*softWorldInfo,
 		&mVertices[0],
 		&mIndizes[0],
 		mIndizes.size() / 3);
@@ -188,14 +197,84 @@ void cSimSoftBody::Init(const std::shared_ptr<cWorld>& world, const tParams& par
 	softBody->randomizeConstraints();
 	softBody->setTotalMass(100, true);
 	softBody->setPose(false, true);
+	*/
+
+
+	/*
+	auto softBody = btSoftBodyHelpers::CreateEllipsoid(
+		*softWorldInfo,
+		btVector3(params.mPos.x(), params.mPos.y(), params.mPos.z()),
+		btVector3(1.0f, 1.0f, 1.0f),
+		100);
+	*/
+
+	auto softBody = btSoftBodyHelpers::CreateFromTriMesh(
+		*softWorldInfo,
+		&mVertices[0],
+		&mIndizes[0],
+		mIndizes.size() / 3);
+	softBody->setTotalMass(50);
+	softBody->generateBendingConstraints(2);
+	softBody->randomizeConstraints();
+
+
+	auto cFlags = softBody->getCollisionFlags();
+
+	std::cout << " collision flags " << cFlags << std::endl;
+
+
+	// common settings
+	softBody->m_cfg.kDF = .2;
+	softBody->m_cfg.kDP = 0;
+	softBody->m_cfg.kVC = 20;
+	softBody->m_cfg.kPR = 0;
+	softBody->m_cfg.kAHR = .7;
+	softBody->m_cfg.maxvolume = 1;
+	softBody->m_cfg.kMT = 0;
+	softBody->m_cfg.kVCF = 1;
+	softBody->m_cfg.timescale = 1;
+	//softBody->m_cfg.collisions = btSoftBody::fCollision::Default;
+
+	std::cout << " fCollisions " << softBody->m_cfg.collisions << std::endl;
+	// contact hardness settings
+	softBody->m_cfg.kCHR = 1;
+	softBody->m_cfg.kKHR = .1;
+	softBody->m_cfg.kSHR = 1;
+
+	// solver settings
+	softBody->m_cfg.piterations = 1;
+	softBody->m_cfg.diterations = 0;
+	softBody->m_cfg.viterations = 0;
+	softBody->m_cfg.citerations = 0;
+	
+	// aero settings
+	softBody->m_cfg.aeromodel = btSoftBody::eAeroModel::V_Point;
+	softBody->m_cfg.kDG = 0;
+	softBody->m_cfg.kLF = 0;
+
+	// cluster settings
+	softBody->m_cfg.kSRHR_CL = 0.1;
+	softBody->m_cfg.kSKHR_CL = 1;
+	softBody->m_cfg.kSSHR_CL = 0.5;
+	softBody->m_cfg.kSR_SPLT_CL = 0.5;
+	softBody->m_cfg.kSK_SPLT_CL = 0.5;
+	softBody->m_cfg.kSS_SPLT_CL = 0.5;
+	
+	auto translation = world->GetScale() * btVector3(params.mPos.x(), params.mPos.y(), params.mPos.z());
+	auto rotation = btQuaternion(params.mRot.x(), params.mRot.y(), params.mRot.z(), params.mRot.w());
+	auto transform = btTransform(rotation, translation);
+
+	softBody->transform(transform);
 
 	mSoftBody = std::unique_ptr<btSoftBody>(softBody);
 
 	AddToWorld(world);
 
+	/*
 	SetPos(params.mPos);
 	SetLinearVelocity(params.mVel);
 	SetRotation(params.mRot);
+	*/
 
 	UpdateShape();
 }

@@ -200,7 +200,7 @@ namespace serializeSceneSimChar {
 
 	std::vector<tRigidBodyRecording> rigidBodyRecordings;
 	tSoftBodyRecording softBodyRecording;
-	std::shared_ptr<cSimSoftBody> simSoftBody;
+	cSimSoftBody* simSoftBody;
 
 	void tRigidBodyRecording::serializeFrameCache(Alembic::Abc::OArchive& archive) const
 	{
@@ -330,7 +330,123 @@ namespace serializeSceneSimChar {
 
 	void tSoftBodyRecording::serializeFrameCache(Alembic::Abc::OArchive& archive) const
 	{
-		std::cout << "  NOT IMPLEMENTED YET	void tSoftBodyRecording::serializeFrameCache(Alembic::Abc::OArchive& archive) const" << std::endl;
+		auto frameDuration = timePassed / frames.size();
+		auto timeSampling = Alembic::AbcCoreAbstract::TimeSampling(frameDuration, 0.0f);
+		auto timeSamplingIdx = archive.addTimeSampling(timeSampling);
+
+		auto name = std::string("softBody");
+		auto abcXform = Alembic::AbcGeom::OXform(archive.getTop(), name);
+		auto abcShape = Alembic::AbcGeom::OPolyMesh(abcXform, name + "Shape");
+
+		abcXform.getSchema().setTimeSampling(timeSamplingIdx);
+		abcShape.getSchema().setTimeSampling(timeSamplingIdx);
+		abcShape.getSchema().setUVSourceName("uv");
+
+
+		std::vector<Alembic::Abc::int32_t> indices;
+		for (int i = 0; i < shape.indices.size() / 3; ++i)
+		{
+			auto& i0 = shape.indices[i * 3 + 0];
+			auto& i1 = shape.indices[i * 3 + 1];
+			auto& i2 = shape.indices[i * 3 + 2];
+
+			// invert index order to convert handedness
+			indices.push_back(i0);
+			indices.push_back(i1);
+			indices.push_back(i2);
+		}
+
+		std::vector<Alembic::Abc::int32_t> faceCounts;
+		for (int i = 0; i < indices.size() / 3; ++i)
+		{
+			faceCounts.push_back(3);
+		}
+
+		std::vector<Alembic::Abc::V2f> uvs;
+		for (int i = 0; i < shape.uvs.size() / 2; ++i)
+		{
+			auto u = shape.uvs[i * 2 + 0];
+			auto v = shape.uvs[i * 2 + 1];
+
+			uvs.push_back(Alembic::Abc::V2f(u, v));
+		}
+
+		Alembic::AbcGeom::OV2fGeomParam::Sample uvSample(
+			Alembic::Abc::V2fArraySample(
+				uvs.data(),
+				uvs.size()),
+			Alembic::AbcGeom::kFacevaryingScope);
+
+		std::vector<Alembic::Abc::N3f> normals;
+		for (int i = 0; i < shape.normals.size() / 3; ++i)
+		{
+			auto x = shape.normals[i * 3 + 0];
+			auto y = shape.normals[i * 3 + 1];
+			auto z = shape.normals[i * 3 + 2];
+
+			normals.push_back(Alembic::Abc::N3f(x, y, z));
+		}
+
+		Alembic::AbcGeom::ON3fGeomParam::Sample normalSample(
+			Alembic::Abc::N3fArraySample(
+				normals.data(),
+				normals.size()),
+			Alembic::AbcGeom::kFacevaryingScope);
+
+		std::cout << " encoded " << indices.size() << " indizes " << faceCounts.size() << " faces" << std::endl;
+
+
+		Alembic::AbcGeom::M44d mat;
+
+		bool firstFrame = true;
+
+		for (const auto& f : frames)
+		{
+			Alembic::AbcGeom::XformSample xformSample;
+			xformSample.setMatrix(mat);
+			abcXform.getSchema().set(xformSample);
+
+			std::vector<Alembic::Abc::V3f> vertices;
+			for (int i = 0; i < f.size() / 3; ++i)
+			{
+				// scale by 100 to make cm unit export work between c4d and bullet
+
+				auto x = f[i * 3 + 0];// *100.0;
+				auto y = f[i * 3 + 1];// *100.0;
+				auto z = f[i * 3 + 2];// *100.0;
+
+				vertices.push_back(Alembic::Abc::V3f(x, y, z));
+			}
+
+
+			Alembic::AbcGeom::OPolyMeshSchema::Sample meshSample;
+			meshSample.setPositions(
+				Alembic::Abc::P3fArraySample(
+					vertices.data(),
+					vertices.size()));
+
+			if (firstFrame)
+			{
+				meshSample.setFaceIndices(
+					Alembic::Abc::Int32ArraySample(
+						indices.data(),
+						indices.size()));
+
+				meshSample.setFaceCounts(
+					Alembic::Abc::Int32ArraySample(
+						faceCounts.data(),
+						faceCounts.size()
+					)
+				);
+
+				meshSample.setUVs(uvSample);
+				//meshSample.setNormals(normals);
+
+				firstFrame = false;
+			}
+
+			abcShape.getSchema().set(meshSample);
+		}
 	}
 }
 
@@ -1002,7 +1118,7 @@ void cSceneSimChar::ResetScene()
 
 	if (timePassed > 0.1 && !mMattressOutputPath.empty())
 	{
-		auto framesRecorded = rigidBodyRecordings[0].frames.size();
+		auto framesRecorded = softBodyRecording.frames.size();
 		auto frameDuration = timePassed / framesRecorded;
 
 		std::cout << "cSceneSimChar::ResetScene " << framesRecorded \
@@ -1124,12 +1240,9 @@ void cSceneSimChar::PostUpdate(double timestep)
 	}
 	if (!mMattressInputPath.empty() && !mMattressOutputPath.empty())
 	{
-		/*
-		auto mesh = std::dynamic_pointer_cast<cSimRigidMesh>(GetObj(mattressHandle));
-		auto worldTransform = mesh->GetWorldTransform();
-
-		frames.push_back(worldTransform);
-		*/
+		auto worldTransform = simSoftBody->GetWorldTransform();
+		auto vertices = simSoftBody->GetVertexPositions();
+		softBodyRecording.frames.push_back(vertices);
 	}
 
 	timePassed += timestep;
@@ -1415,13 +1528,11 @@ int cSceneSimChar::SpawnRigidMesh(void * _shape)
 	return AddObj(obj_entry);
 }
 
-
 int cSceneSimChar::SpawnSoftMesh(void * _shape)
 {
-	std::cout << "  NOT IMPLEMENTED YET int cSceneSimChar::SpawnSoftMesh(void * _shape)" << std::endl;
-
 	auto & shape = *(tMesh*)_shape;
-	simSoftBody = std::shared_ptr<cSimSoftBody>(new cSimSoftBody());
+	// FIXME: this leaks on purpose to bypass crash in cleanup code
+	simSoftBody = new cSimSoftBody();
 
 	cSimSoftBody::tParams params;
 	params.mPos = shape.rootPos;
@@ -1432,7 +1543,7 @@ int cSceneSimChar::SpawnSoftMesh(void * _shape)
 	params.mUVs = shape.uvs;
 
 	simSoftBody->Init(mWorld, params);
-	simSoftBody->UpdateContact(cWorld::eContactFlagObject, cContactManager::gFlagNone);
+	//simSoftBody->UpdateContact(cWorld::eContactFlagObject, cContactManager::gFlagNone);
 	/*
 	tObjEntry obj_entry;
 	obj_entry.mObj = simSoftBody;
@@ -1443,6 +1554,10 @@ int cSceneSimChar::SpawnSoftMesh(void * _shape)
 	return 0xFF;
 }
 
+const cSimObj& cSceneSimChar::GetSoftBody() const
+{
+	return *simSoftBody;
+}
 
 void cSceneSimChar::ResetRandPertrub()
 {

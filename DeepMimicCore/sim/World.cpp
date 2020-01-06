@@ -5,6 +5,7 @@
 #include "BulletDynamics/MLCPSolvers/btMLCPSolver.h"
 #include "BulletDynamics/Featherstone/btMultiBodyConstraintSolver.h"
 #include "BulletSoftBody/btSoftMultiBodyDynamicsWorld.h"
+#include "BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.h"
 
 #include "sim/SimBox.h"
 #include "sim/SimCapsule.h"
@@ -54,8 +55,13 @@ void cWorld::Init(const tParams& params)
 {
 	mParams = params;
 
-	mBroadPhase = std::unique_ptr<btBroadphaseInterface>(new btDbvtBroadphase());
-	mCollisionConfig = std::unique_ptr<btDefaultCollisionConfiguration>(new btDefaultCollisionConfiguration());
+
+	int maxProxies = 32766;
+	btVector3 worldAabbMin(-1000, -1000, -1000);
+	btVector3 worldAabbMax(1000, 1000, 1000);
+
+	mBroadPhase = std::unique_ptr<btBroadphaseInterface>(new btAxisSweep3(worldAabbMin, worldAabbMax, maxProxies));
+	mCollisionConfig = std::unique_ptr<btCollisionConfiguration>(new btSoftBodyRigidBodyCollisionConfiguration());
 	mCollisionDispatcher = std::unique_ptr<btCollisionDispatcher>(new btCollisionDispatcher(mCollisionConfig.get()));
 	btGImpactCollisionAlgorithm::registerAlgorithm(mCollisionDispatcher.get());
 

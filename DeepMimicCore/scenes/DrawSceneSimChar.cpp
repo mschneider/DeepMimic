@@ -404,6 +404,9 @@ void cDrawSceneSimChar::DrawObjs() const
 			}
 		}
 	}
+
+	auto& obj = mScene->GetSoftBody();
+	cDrawObj::DrawSoft(&obj, cDrawUtil::eDrawSolid);
 }
 
 void cDrawSceneSimChar::DrawMisc() const

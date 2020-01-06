@@ -157,12 +157,16 @@ void cDrawObj::DrawSoft(const cSimObj* cap, cDrawUtil::eDrawMode draw_mode)
 	assert(cap->GetShape() == cShape::eShapeSoft);
 
 	cDrawUtil::PushMatrixView();
+	/*
 	cDrawUtil::Translate(cap->GetPos());
 	cDrawUtil::Rotate(cap->GetRotation());
-
+	*/
 
 	GLenum gl_mode = (draw_mode == cDrawUtil::eDrawMode::eDrawSolid) ? GL_TRIANGLES : GL_LINES;
-	auto mesh = ((cSimSoftBody*)cap)->GetDrawMesh();
+	
+	auto sb = (cSimSoftBody*)cap;
+	sb->UpdateShape();
+	auto mesh = sb->GetDrawMesh();
 	mesh->Draw(gl_mode);
 
 	cDrawUtil::PopMatrixView();

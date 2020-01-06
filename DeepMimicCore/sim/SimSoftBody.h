@@ -42,6 +42,7 @@ public:
 	virtual void SetRotation(const tQuaternion& q);
 	virtual void UpdateShape();
 
+	virtual const std::vector<btScalar>& GetVertexPositions() const;
 	virtual tMatrix GetWorldTransform() const;
 
 	virtual void CalcAABB(tVector& out_min, tVector& out_max) const;
