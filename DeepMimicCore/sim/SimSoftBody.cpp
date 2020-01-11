@@ -146,7 +146,7 @@ void cSimSoftBody::UpdateShape()
 	mVertices.clear();
 	for (int i = 0; i < mSoftBody->m_nodes.size(); ++i)
 	{
-		auto & nodePos = mSoftBody->m_nodes[i].m_x;
+		auto& nodePos = mSoftBody->m_nodes[i].m_x / mWorld->GetScale();
 		mVertices.push_back(nodePos.x());
 		mVertices.push_back(nodePos.y());
 		mVertices.push_back(nodePos.z());
@@ -260,11 +260,13 @@ void cSimSoftBody::Init(const std::shared_ptr<cWorld>& world, const tParams& par
 	softBody->m_cfg.kSK_SPLT_CL = 0.5;
 	softBody->m_cfg.kSS_SPLT_CL = 0.5;
 	
-	auto translation = world->GetScale() * btVector3(params.mPos.x(), params.mPos.y(), params.mPos.z());
+	auto translation = btVector3(params.mPos.x(), params.mPos.y(), params.mPos.z());
 	auto rotation = btQuaternion(params.mRot.x(), params.mRot.y(), params.mRot.z(), params.mRot.w());
-	auto transform = btTransform(rotation, translation);
-
-	softBody->transform(transform);
+	auto scale = world->GetScale() * btVector3(1, 1, 1);
+	
+	softBody->translate(translation);
+	softBody->rotate(rotation);
+	softBody->scale(scale);
 
 	mSoftBody = std::unique_ptr<btSoftBody>(softBody);
 
