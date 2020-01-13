@@ -27,7 +27,7 @@ const size_t gInitGroundUpdateCount = std::numeric_limits<size_t>::max();
 namespace serializeSceneSimChar {
 
 	const float translationScale = 0.01;
-	const tVector translationOffset(-2, 0.06, -0.2, 0);
+	const tVector translationOffset(0, 0, 0, 0);
 
 	typedef struct mesh {
 		tVector rootPos;
