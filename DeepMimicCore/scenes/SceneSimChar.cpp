@@ -1158,7 +1158,9 @@ void cSceneSimChar::ResetScene()
 			tRigidBodyRecording recording;
 			recording.name = rigidBodyName;
 			recording.shape.deserializeFromLastSample(archive, rigidBodyName, rigidBodyShapeName);
-			recording.handle = SpawnRigidMesh(&recording.shape);
+
+			auto isStatic = rigidBodyName.find("static_") == 0;
+			recording.handle = SpawnRigidMesh(&recording.shape, isStatic);
 
 			rigidBodyRecordings.push_back(recording);
 		}
@@ -1506,12 +1508,13 @@ void cSceneSimChar::SpawnProjectile(double density, double min_size, double max_
 	AddObj(obj_entry);
 }
 
-int cSceneSimChar::SpawnRigidMesh(void * _shape)
+int cSceneSimChar::SpawnRigidMesh(void * _shape, bool isStatic)
 {
 	auto & shape = *(tMesh*)_shape;
 	std::shared_ptr<cSimRigidMesh> simMesh = std::shared_ptr<cSimRigidMesh>(new cSimRigidMesh());
 
 	cSimRigidMesh::tParams params;
+	params.mType = isStatic ? cSimObj::eType::eTypeStatic : cSimObj::eType::eTypeDynamic;
 	params.mPos = shape.rootPos;
 	params.mRot = shape.rootRot;
 	params.mVertices = shape.vertices;
