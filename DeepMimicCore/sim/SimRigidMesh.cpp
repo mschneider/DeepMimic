@@ -131,11 +131,14 @@ void cSimRigidMesh::Init(const std::shared_ptr<cWorld>& world, const tParams& pa
 	btRigidBody::btRigidBodyConstructionInfo cons_info(mass, this, mColShape.get(), inertia);
 	mSimBody = std::unique_ptr<btRigidBody>(new btRigidBody(cons_info));
 	mSimBody->setFriction(static_cast<btScalar>(params.mFriction));
-
+	
 	cSimRigidBody::Init(world);
 	SetPos(params.mPos);
 	SetLinearVelocity(params.mVel);
 	SetRotation(params.mRot);
+
+	mColShape->setMargin(0.001);
+	std::cout << " margin: " << mColShape->getMargin() << std::endl;
 
 	// debug transform
 

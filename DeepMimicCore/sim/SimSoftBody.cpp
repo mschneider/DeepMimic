@@ -242,10 +242,10 @@ void cSimSoftBody::Init(const std::shared_ptr<cWorld>& world, const tParams& par
 	softBody->m_cfg.kSHR = 1;
 
 	// solver settings
-	softBody->m_cfg.piterations = 1;
-	softBody->m_cfg.diterations = 0;
-	softBody->m_cfg.viterations = 0;
-	softBody->m_cfg.citerations = 0;
+	softBody->m_cfg.piterations = 10;
+	softBody->m_cfg.diterations = 10;
+	softBody->m_cfg.viterations = 10;
+	softBody->m_cfg.citerations = 10;
 	
 	// aero settings
 	softBody->m_cfg.aeromodel = btSoftBody::eAeroModel::V_Point;
@@ -271,6 +271,8 @@ void cSimSoftBody::Init(const std::shared_ptr<cWorld>& world, const tParams& par
 	mSoftBody = std::unique_ptr<btSoftBody>(softBody);
 
 	AddToWorld(world);
+
+	softBody->getCollisionShape()->setMargin(0.14);
 
 	/*
 	SetPos(params.mPos);
