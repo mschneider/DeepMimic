@@ -1092,7 +1092,8 @@ void cSceneSimChar::ResetScene()
 	InitCharacterPos();
 	ResolveCharGroundIntersect();
 
-	std::cin.get();
+	// manual breakpoint for debug
+	// std::cin.get();
 
 	if (timePassed > 0.1 && rigidBodyRecordings.size() > 0 && !mRigidWorldOutputPath.empty())
 	{
