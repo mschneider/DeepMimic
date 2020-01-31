@@ -89,11 +89,15 @@ namespace serializeSceneSimChar {
 		auto vertexPtr = meshSample.getPositions()->get();
 		auto indexPtr = meshSample.getFaceIndices()->get();
 
+		/*
 		auto normalsArray = polyMesh.getSchema().getNormalsParam().getExpandedValue().getVals();
+		*/
 		auto uvsArray = polyMesh.getSchema().getUVsParam().getExpandedValue().getVals();
 
+		/*
 		std::cout << " found " << numVertices << " vertices with " << numIndizes << " indizes and " <<
 			normalsArray->size() << " normals " << uvsArray->size() << " uvs" << std::endl;
+			*/
 
 		vertices.clear();
 		for (int i = 0; i < numVertices; ++i)
@@ -127,12 +131,14 @@ namespace serializeSceneSimChar {
 			indices.push_back(i2);
 		}
 
+		/*
 		normals = std::vector<float>((float*)normalsArray->get(), (float*)(normalsArray->get() + normalsArray->size()));
+		*/
 		uvs = std::vector<float>((float*)uvsArray->get(), (float*)(uvsArray->get() + uvsArray->size()));
-
+		/*
 		std::cout << " copied " << vertices.size() / 3 << " vertices with " << indices.size() << " indizes and " <<
 			normals.size() / 3 << " normals " << uvs.size() / 2 << " uvs " << std::endl;
-
+		*/
 		/*
 		auto posMinMax = std::minmax_element(vertices.begin(), vertices.end());
 		auto idxMinMax = std::minmax_element(indices.begin(), indices.end());
@@ -220,9 +226,9 @@ namespace serializeSceneSimChar {
 		{
 			// scale by 100 to make cm unit export work between c4d and bullet
 
-			auto x = shape.vertices[i * 3 + 0];// *100.0;
-			auto y = shape.vertices[i * 3 + 1];// *100.0;
-			auto z = shape.vertices[i * 3 + 2];// *100.0;
+			auto x = shape.vertices[i * 3 + 0] * 100.0;
+			auto y = shape.vertices[i * 3 + 1] * 100.0;
+			auto z = shape.vertices[i * 3 + 2] * 100.0;
 
 			vertices.push_back(Alembic::Abc::V3f(x, y, z));
 		}
@@ -288,7 +294,10 @@ namespace serializeSceneSimChar {
 			{
 				for (auto x = 0; x < 4; ++x)
 				{
-					mat[x][y] = f(y, x);
+					if (x == 3 && y < 3)
+						mat[x][y] = 100 * f(y, x);
+					else
+						mat[x][y] = f(y, x);
 				}
 			}
 
@@ -411,9 +420,9 @@ namespace serializeSceneSimChar {
 			{
 				// scale by 100 to make cm unit export work between c4d and bullet
 
-				auto x = f[i * 3 + 0];// *100.0;
-				auto y = f[i * 3 + 1];// *100.0;
-				auto z = f[i * 3 + 2];// *100.0;
+				auto x = f[i * 3 + 0] * 100.0;
+				auto y = f[i * 3 + 1] * 100.0;
+				auto z = f[i * 3 + 2] * 100.0;
 
 				vertices.push_back(Alembic::Abc::V3f(x, y, z));
 			}
