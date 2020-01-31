@@ -200,7 +200,7 @@ namespace serializeSceneSimChar {
 
 	std::vector<tRigidBodyRecording> rigidBodyRecordings;
 	tSoftBodyRecording softBodyRecording;
-	cSimSoftBody* simSoftBody;
+	cSimSoftBody* simSoftBody = nullptr;
 
 	void tRigidBodyRecording::serializeFrameCache(Alembic::Abc::OArchive& archive) const
 	{
@@ -1558,9 +1558,9 @@ int cSceneSimChar::SpawnSoftMesh(void * _shape)
 	return 0xFF;
 }
 
-const cSimObj& cSceneSimChar::GetSoftBody() const
+const cSimObj* cSceneSimChar::GetSoftBody() const
 {
-	return *simSoftBody;
+	return simSoftBody;
 }
 
 void cSceneSimChar::ResetRandPertrub()
