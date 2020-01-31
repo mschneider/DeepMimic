@@ -30,6 +30,7 @@ protected:
 
 	Eigen::VectorXd mJointWeights;
 	bool mEnableRandRotReset;
+	bool mEnableRandTimeReset;
 	bool mSyncCharRootPos;
 	bool mSyncCharRootRot;
 	bool mEnableRootRotFail;

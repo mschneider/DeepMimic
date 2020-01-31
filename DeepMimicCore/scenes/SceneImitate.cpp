@@ -136,6 +136,7 @@ double cSceneImitate::CalcRewardImitate(const cSimCharacter& sim_char, const cKi
 cSceneImitate::cSceneImitate()
 {
 	mEnableRandRotReset = false;
+	mEnableRandTimeReset = true;
 	mSyncCharRootPos = true;
 	mSyncCharRootRot = false;
 	mMotionFile = "";
@@ -152,6 +153,7 @@ void cSceneImitate::ParseArgs(const std::shared_ptr<cArgParser>& parser)
 	cRLSceneSimChar::ParseArgs(parser);
 	parser->ParseString("motion_file", mMotionFile);
 	parser->ParseBool("enable_rand_rot_reset", mEnableRandRotReset);
+	parser->ParseBool("enable_rand_time_reset", mEnableRandTimeReset);
 	parser->ParseBool("sync_char_root_pos", mSyncCharRootPos);
 	parser->ParseBool("sync_char_root_rot", mSyncCharRootRot);
 	parser->ParseBool("enable_root_rot_fail", mEnableRootRotFail);
@@ -330,7 +332,7 @@ void cSceneImitate::ResetCharacters()
 
 void cSceneImitate::ResetKinChar()
 {
-	double rand_time = CalcRandKinResetTime();
+	double reset_time = mEnableRandTimeReset ? CalcRandKinResetTime() : 0.0;
 
 	const cSimCharacter::tParams& char_params = mCharParams[0];
 	const auto& kin_char = GetKinChar();
@@ -338,8 +340,8 @@ void cSceneImitate::ResetKinChar()
 	kin_char->Reset();
 	kin_char->SetOriginRot(tQuaternion::Identity());
 	kin_char->SetOriginPos(char_params.mInitPos); // reset origin
-	kin_char->SetTime(rand_time);
-	kin_char->Pose(rand_time);
+	kin_char->SetTime(reset_time);
+	kin_char->Pose(reset_time);
 
 	if (EnabledRandRotReset())
 	{
