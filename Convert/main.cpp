@@ -51,18 +51,18 @@ std::string constraintNames[] = {
   "root",
   "chest",
   "neck",
-  "right_hip",
-  "right_knee",
-  "right_ankle",
-  "right_shoulder",
-  "right_elbow",
-  "right_wrist",
   "left_hip",
   "left_knee",
   "left_ankle",
   "left_shoulder",
   "left_elbow",
-  "left_wrist"
+  "left_wrist",
+  "right_hip",
+  "right_knee",
+  "right_ankle",
+  "right_shoulder",
+  "right_elbow",
+  "right_wrist"
 };
 
 std::string stringify(const btQuaternion & q)
@@ -349,7 +349,7 @@ void OutputBuilder::buildRigidBodyDef(int i, Json::Value & bodyDef)
       bodyDef["AttachZ"] = -offsetA.z();
     }
 
-    //bodyDef["AttachX"] = bodyDef["AttachY"] = bodyDef["AttachZ"] = 0.0;
+	bodyDef["AttachZ"] = -1 * bodyDef["AttachZ"].asFloat();
   }
   else
   {
