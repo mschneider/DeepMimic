@@ -31,19 +31,25 @@ namespace serializeSceneSimChar {
 
 	typedef struct mesh {
 		tVector rootPos;
-		Eigen::AngleAxisd rootRot;
+		tVector rootPosVelocity;
+		tQuaternion rootRot;
+		tQuaternion rootRotVelocity;
 		std::vector<btScalar> vertices;
 		std::vector<int32_t> indices;
 		std::vector<float> normals;
 		std::vector<float> uvs;
 
-		void deserializeFromLastSample(
+		void deserializeFromArchive(
+			Alembic::Abc::IArchive& archive,
+			const std::string& transformName,
+			const std::string& shapeName);
+		void calculateVelocities(
 			Alembic::Abc::IArchive& archive,
 			const std::string& transformName,
 			const std::string& shapeName);
 	} tMesh;
 
-	void tMesh::deserializeFromLastSample(
+	void tMesh::deserializeFromArchive(
 		Alembic::Abc::IArchive& archive,
 		const std::string& transformName,
 		const std::string& shapeName)
@@ -54,16 +60,25 @@ namespace serializeSceneSimChar {
 		Alembic::AbcCoreAbstract::index_t lastIndexRootTransform = rootTransform.getSchema().getNumSamples() - 1;
 		auto lastSampleSelectorRootTransform = Alembic::Abc::ISampleSelector(lastIndexRootTransform);
 
-		Alembic::AbcCoreAbstract::index_t lastIndex = polyMesh.getSchema().getNumSamples() - 1;
-		auto lastSampleSelectorMesh = Alembic::Abc::ISampleSelector(lastIndex);
+		Alembic::AbcCoreAbstract::index_t lastIndexMesh = polyMesh.getSchema().getNumSamples() - 1;
+		auto lastSampleSelectorMesh = Alembic::Abc::ISampleSelector(lastIndexMesh);
+
+		std::cout << " counted samples " \
+			<< " xform=" << rootTransform.getSchema().getNumSamples() << std::endl \
+			<< " mesh=" << polyMesh.getSchema().getNumSamples() << std::endl;
 
 		Alembic::AbcGeom::XformSample rootTransformSample;
 		rootTransform.getSchema().get(rootTransformSample, lastSampleSelectorRootTransform);
 
 		auto rootTransformTranslation = rootTransformSample.getTranslation();
 		rootPos = tVector(rootTransformTranslation.x, rootTransformTranslation.y, rootTransformTranslation.z, 0);
+
+		std::cout << " debug root rot:" << std::endl \
+			<< "  angle: " << rootTransformSample.getAngle() \
+			<< "  axis: " << rootTransformSample.getAxis().x << ", " << rootTransformSample.getAxis().y << rootTransformSample.getAxis().z << std::endl;
+
 		rootRot = Eigen::AngleAxisd(
-			rootTransformSample.getAngle(),
+			rootTransformSample.getAngle() * M_PI / 180,
 			Eigen::Vector3d(
 				rootTransformSample.getAxis().x,
 				rootTransformSample.getAxis().y,
@@ -74,7 +89,7 @@ namespace serializeSceneSimChar {
 		Eigen::IOFormat InlineVectorFmt(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", ", ", "", "", "(", ")");
 		std::cout << " found rootTransform with:" << std::endl \
 			<< "  pos: " << rootPos.format(InlineVectorFmt) << std::endl \
-			<< "  rot: " << rootRot.angle() << " @ " << rootRot.axis().format(InlineVectorFmt) << std::endl \
+			<< "  rot: " << rootRot.toRotationMatrix().eulerAngles(0, 1, 2).format(InlineVectorFmt) << std::endl \
 			<< "  sca: " << rootScale.format(InlineVectorFmt) << std::endl;
 
 		// offset and scale transform positional values 
@@ -182,7 +197,55 @@ namespace serializeSceneSimChar {
 			std::cout << std::endl;
 		}
 		*/
-;
+
+		if (lastIndexRootTransform > 0)
+		{
+			calculateVelocities(archive, transformName, shapeName);
+
+			std::cout << " calculated velocities for rootTransform:" << std::endl \
+				<< "  pos: " << rootPosVelocity.format(InlineVectorFmt) << std::endl \
+				<< "  rot: " << rootRotVelocity.toRotationMatrix().eulerAngles(0, 1, 2).format(InlineVectorFmt) << std::endl;
+		}
+		else
+		{
+			rootPosVelocity = tVector3::Zero();
+			rootRotVelocity = tQuaternion::Identity();
+
+			std::cout << " used neutral velocities for rootTransform:" << std::endl \
+				<< "  pos: " << rootPosVelocity.format(InlineVectorFmt) << std::endl \
+				<< "  rot: " << rootRotVelocity.toRotationMatrix().eulerAngles(0, 1, 2).format(InlineVectorFmt) << std::endl;
+		}
+	}
+
+	void tMesh::calculateVelocities(
+		Alembic::Abc::IArchive& archive,
+		const std::string& transformName,
+		const std::string& shapeName)
+	{
+		auto rootTransform = Alembic::AbcGeom::IXform(archive.getTop(), transformName);
+		auto polyMesh = Alembic::AbcGeom::IPolyMesh(rootTransform, shapeName);
+
+		Alembic::AbcCoreAbstract::index_t secondLastIndexRootTransform = rootTransform.getSchema().getNumSamples() - 2;
+		auto secondLastSampleSelectorRootTransform = Alembic::Abc::ISampleSelector(secondLastIndexRootTransform);
+
+		Alembic::AbcGeom::XformSample rootTransformSample;
+		rootTransform.getSchema().get(rootTransformSample, secondLastSampleSelectorRootTransform);
+
+		// offset and scale transform positional values 
+		auto rootTransformTranslation = rootTransformSample.getTranslation();
+		auto secondLastTranslation = tVector(rootTransformTranslation.x, rootTransformTranslation.y, rootTransformTranslation.z, 0);
+		auto secondLastPos = translationOffset + (secondLastTranslation * translationScale);
+
+		rootPosVelocity = rootPos - secondLastPos;
+
+		auto secondLastRot = Eigen::AngleAxisd(
+			rootTransformSample.getAngle() * M_PI / 180,
+			Eigen::Vector3d(
+				rootTransformSample.getAxis().x,
+				rootTransformSample.getAxis().y,
+				rootTransformSample.getAxis().z));
+
+		rootRotVelocity = rootRot * tQuaternion(secondLastRot).conjugate();
 	}
 
 	typedef struct rigidBodyRecording {
@@ -1166,7 +1229,7 @@ void cSceneSimChar::ResetScene()
 
 			tRigidBodyRecording recording;
 			recording.name = rigidBodyName;
-			recording.shape.deserializeFromLastSample(archive, rigidBodyName, rigidBodyShapeName);
+			recording.shape.deserializeFromArchive(archive, rigidBodyName, rigidBodyShapeName);
 
 			auto isStatic = rigidBodyName.find("static_") == 0;
 			recording.handle = SpawnRigidMesh(&recording.shape, isStatic);
@@ -1190,7 +1253,7 @@ void cSceneSimChar::ResetScene()
 		std::cout << " found rigidBody " << matressName << " with shape " << matressShapeName << std::endl;
 
 		tSoftBodyRecording recording;
-		recording.shape.deserializeFromLastSample(archive, matressName, matressShapeName);
+		recording.shape.deserializeFromArchive(archive, matressName, matressShapeName);
 		recording.handle = SpawnSoftMesh(&recording.shape);
 
 		softBodyRecording = recording;
@@ -1525,7 +1588,9 @@ int cSceneSimChar::SpawnRigidMesh(void * _shape, bool isStatic)
 	cSimRigidMesh::tParams params;
 	params.mType = isStatic ? cSimObj::eType::eTypeStatic : cSimObj::eType::eTypeDynamic;
 	params.mPos = shape.rootPos;
+	params.mVel = shape.rootPosVelocity;
 	params.mRot = shape.rootRot;
+	params.mAngVel = shape.rootRotVelocity;
 	params.mVertices = shape.vertices;
 	params.mIndizes = shape.indices;
 	params.mNormals = shape.normals;

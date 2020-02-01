@@ -14,6 +14,7 @@ cSimRigidMesh::tParams::tParams()
 	mPos = tVector(0, 0, 0, 0);
 	mVel = tVector(0, 0, 0, 0);
 	mRot = tQuaternion::Identity();
+	mAngVel = tQuaternion::Identity();
 
 	mVertices = {};
 	mIndizes = {};
@@ -134,8 +135,10 @@ void cSimRigidMesh::Init(const std::shared_ptr<cWorld>& world, const tParams& pa
 	
 	cSimRigidBody::Init(world);
 	SetPos(params.mPos);
-	SetLinearVelocity(params.mVel);
+	SetLinearVelocity(params.mVel * 600);
 	SetRotation(params.mRot);
+
+	auto euler = params.mAngVel.toRotationMatrix().eulerAngles(0, 1, 2);
 
 	mColShape->setMargin(0.001);
 	std::cout << " margin: " << mColShape->getMargin() << std::endl;

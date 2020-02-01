@@ -18,6 +18,7 @@ public:
 		tVector mPos;
 		tVector mVel;
 		tQuaternion mRot;
+		tQuaternion mAngVel;
 
 		std::vector<btScalar> mVertices;
 		std::vector<int32_t> mIndizes;
