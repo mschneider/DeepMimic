@@ -302,6 +302,12 @@
     <ClCompile Include="sim\DeepMimicCharController.cpp">
       <Filter>Source Files\sim</Filter>
     </ClCompile>
+    <ClCompile Include="sim\SimRigidMesh.cpp">
+      <Filter>Source Files\sim</Filter>
+    </ClCompile>
+    <ClCompile Include="sim\SimSoftBody.cpp">
+      <Filter>Source Files\sim</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="util\CircularBuffer.h">
@@ -608,6 +614,12 @@
       <Filter>Source Files\sim</Filter>
     </ClInclude>
     <ClInclude Include="sim\DeepMimicCharController.h">
+      <Filter>Source Files\sim</Filter>
+    </ClInclude>
+    <ClInclude Include="sim\SimRigidMesh.h">
+      <Filter>Source Files\sim</Filter>
+    </ClInclude>
+    <ClInclude Include="sim\SimSoftBody.h">
       <Filter>Source Files\sim</Filter>
     </ClInclude>
   </ItemGroup>

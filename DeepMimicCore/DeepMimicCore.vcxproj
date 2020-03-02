@@ -223,7 +223,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;_USE_MATH_DEFINES;FREEGLUT_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>false</SDLCheck>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\AppData\Local\Continuum\anaconda3\envs\deep_mimic\include;$(ProjectDir)..\deps\openexr\build\install\include\OpenEXR;$(ProjectDir)..\deps\alembic\build\lib;$(ProjectDir)..\deps\alembic\lib;$(ProjectDir)..\deps\glew-2.1.0\include;$(ProjectDir)..\deps\freeglut\include;$(ProjectDir)..\deps\eigen3;$(ProjectDir)..\deps\bullet3\src;$(ProjectDir);..\..\..\library\Bullet3\src;..\..\..\library\;$(PYTHON_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\User\Anaconda3\envs\deep_mimic\include;$(ProjectDir)..\deps\openexr\build\install\include\OpenEXR;$(ProjectDir)..\deps\alembic\build\lib;$(ProjectDir)..\deps\alembic\lib;$(ProjectDir)..\deps\glew-2.1.0\include;$(ProjectDir)..\deps\freeglut\include;$(ProjectDir)..\deps\eigen3;$(ProjectDir)..\deps\bullet3\src;$(ProjectDir);..\..\..\library\Bullet3\src;..\..\..\library\;$(PYTHON_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
@@ -232,8 +232,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\AppData\Local\Continuum\anaconda3\envs\deep_mimic\libs;$(ProjectDir)..\deps\alembic\build\lib\Alembic\Release;$(ProjectDir)..\deps\glew-2.1.0\lib\Release\x64;$(ProjectDir)..\deps\freeglut\build\lib\Release;$(ProjectDir)..\deps\bullet3\bin;..\..\..\library\Bullet3\build3\lib\Release;$(PYTHON_LIB);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Alembic.lib;opengl32.lib;glu32.lib;freeglut.lib;glew32.lib;BulletDynamics_vs2010_x64_release.lib;BulletCollision_vs2010_x64_release.lib;LinearMath_vs2010_x64_release.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Users\User\Anaconda3\envs\deep_mimic\libs;$(ProjectDir)..\deps\alembic\build\install\lib;$(ProjectDir)..\deps\glew-2.1.0\lib\Release\x64;$(ProjectDir)..\deps\freeglut\build\install\lib;$(ProjectDir)..\deps\bullet3\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Alembic.lib;opengl32.lib;glu32.lib;freeglut.lib;glew32.lib;BulletDynamics_vs2010_x64_release.lib;BulletCollision_vs2010_x64_release.lib;BulletSoftBody_vs2010_x64_release.lib;LinearMath_vs2010_x64_release.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(ProjectDir)$(TargetName)$(TargetExt)</OutputFile>
     </Link>
   </ItemDefinitionGroup>
@@ -315,6 +315,8 @@
     <ClCompile Include="sim\SimObj.cpp" />
     <ClCompile Include="sim\SimPlane.cpp" />
     <ClCompile Include="sim\SimRigidBody.cpp" />
+    <ClCompile Include="sim\SimRigidMesh.cpp" />
+    <ClCompile Include="sim\SimSoftBody.cpp" />
     <ClCompile Include="sim\SimSphere.cpp" />
     <ClCompile Include="sim\SpAlg.cpp" />
     <ClCompile Include="sim\DeepMimicCharController.cpp" />
@@ -408,6 +410,8 @@
     <ClInclude Include="sim\SimObj.h" />
     <ClInclude Include="sim\SimPlane.h" />
     <ClInclude Include="sim\SimRigidBody.h" />
+    <ClInclude Include="sim\SimRigidMesh.h" />
+    <ClInclude Include="sim\SimSoftBody.h" />
     <ClInclude Include="sim\SimSphere.h" />
     <ClInclude Include="sim\SpAlg.h" />
     <ClInclude Include="sim\DeepMimicCharController.h" />
@@ -452,7 +456,7 @@ $(SWIG_DIR)\swig.exe -c++ -python -o $(ProjectName)_wrap.cpp  $(ProjectName).i</
 echo PYTHON_LIB: %PYTHON_LIB%
 echo SWIG_DIR: %SWIG_DIR%
 echo on
-C:\Users\Nikita.D\Desktop\DeepMimic\deps\swigwin-4.0.0\swig.exe -c++ -python -o $(ProjectName)_wrap.cpp  $(ProjectName).i</Command>
+C:\Users\User\Desktop\DeepMimic\deps\swigwin-4.0.0\swig.exe -c++ -python -o $(ProjectName)_wrap.cpp  $(ProjectName).i</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_Swig|x64'">$(ProjectName)_wrap.cxx;%(Outputs)</Outputs>
     </CustomBuild>
   </ItemGroup>
