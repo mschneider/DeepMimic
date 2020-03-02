@@ -65,7 +65,8 @@ namespace serializeSceneSimChar {
 
 		std::cout << " counted samples " \
 			<< " xform=" << rootTransform.getSchema().getNumSamples() << std::endl \
-			<< " mesh=" << polyMesh.getSchema().getNumSamples() << std::endl;
+			<< " mesh=" << polyMesh.getSchema().getNumSamples() << std::endl \
+			<< " uv=" << polyMesh.getSchema().getUVsParam().getNumSamples() << std::endl;
 
 		Alembic::AbcGeom::XformSample rootTransformSample;
 		rootTransform.getSchema().get(rootTransformSample, lastSampleSelectorRootTransform);
@@ -107,6 +108,10 @@ namespace serializeSceneSimChar {
 		/*
 		auto normalsArray = polyMesh.getSchema().getNormalsParam().getExpandedValue().getVals();
 		*/
+
+		if (polyMesh.getSchema().getUVsParam().getNumSamples() == 0)
+			std::cout << std::endl << " ERROR: found no uvs on mesh " << transformName << std::endl;
+
 		auto uvsArray = polyMesh.getSchema().getUVsParam().getExpandedValue().getVals();
 
 		/*
