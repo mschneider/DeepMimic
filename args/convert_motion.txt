@@ -24,3 +24,4 @@
 #--int_output_path output/intermediate
 --alembic_input_path data/motions/viborg_rig_nd_13_lieForAlembicBakeNulls_04_481frames.abc
 --motion_output_path data/motions/viborg_rig_nd_13_lieForAlembicBakeNulls_04_481frames.txt
+--motion_output_framerate 30

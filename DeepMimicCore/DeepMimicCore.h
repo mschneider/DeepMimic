@@ -92,6 +92,7 @@ protected:
 	std::string mAlembicInputPath;
 	std::string mAlembicOutputPath;
 	std::string mMotionOutputPath;
+	int mMotionOutputFrameRate;
 
 	// info for rendering
 	double mPlaybackSpeed;

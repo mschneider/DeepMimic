@@ -33,6 +33,7 @@ cDeepMimicCore::cDeepMimicCore(bool enable_draw)
 	mAlembicInputPath = "";
 	mAlembicOutputPath = "";
 	mMotionOutputPath = "";
+	mMotionOutputFrameRate = 60;
 	mPlaybackSpeed = 1;
 	mUpdatesPerSec = 0;
 }
@@ -68,6 +69,7 @@ void cDeepMimicCore::ParseArgs(const std::vector<std::string>& args)
 	mArgParser->ParseString("alembic_input_path", mAlembicInputPath);
 	mArgParser->ParseString("alembic_output_path", mAlembicOutputPath);
 	mArgParser->ParseString("motion_output_path", mMotionOutputPath);
+	mArgParser->ParseInt("motion_output_framerate", mMotionOutputFrameRate);
 }
 
 void cDeepMimicCore::Init()
@@ -358,10 +360,11 @@ Eigen::VectorXd calculatePoseFromArchiveTransforms(
 
 Eigen::MatrixXd calculateMotionFromArchiveTransforms(
 		const Alembic::Abc::IArchive & archive,
-		std::shared_ptr<cSimCharacter> simCharacter)
+		std::shared_ptr<cSimCharacter> simCharacter,
+	    int motionFrameRate)
 {
 	constexpr int poseVectorDims = 43;
-	constexpr float interFrameInterval = 0.0333333333;
+	const float interFrameInterval = 1.0f / motionFrameRate;
 	auto numRootSamples = Alembic::AbcGeom::IXform(archive.getTop(), bonePrefix + "root").getSchema().getNumSamples();
 
 	Eigen::MatrixXd motionMatrix(numRootSamples, poseVectorDims + 1);
@@ -477,7 +480,7 @@ void cDeepMimicCore::Reset()
 
 	if (!mMotionOutputPath.empty())
 	{
-		auto motionMatrix = calculateMotionFromArchiveTransforms(archive, simCharacter);
+		auto motionMatrix = calculateMotionFromArchiveTransforms(archive, simCharacter, mMotionOutputFrameRate);
 		std::cout << " motion matrix" << std::endl << motionMatrix << std::endl << std::endl;
 
 		Json::Value output;
