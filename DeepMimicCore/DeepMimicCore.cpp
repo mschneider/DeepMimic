@@ -361,7 +361,7 @@ Eigen::MatrixXd calculateMotionFromArchiveTransforms(
 		std::shared_ptr<cSimCharacter> simCharacter)
 {
 	constexpr int poseVectorDims = 43;
-	constexpr float interFrameInterval = 0.016666;
+	constexpr float interFrameInterval = 0.0333333333;
 	auto numRootSamples = Alembic::AbcGeom::IXform(archive.getTop(), bonePrefix + "root").getSchema().getNumSamples();
 
 	Eigen::MatrixXd motionMatrix(numRootSamples, poseVectorDims + 1);
