@@ -13,6 +13,7 @@
 #include <Eigen/Core>
 
 #include <iterator>
+#include <fstream>
 #include <string>
 
 namespace std
@@ -31,6 +32,8 @@ cDeepMimicCore::cDeepMimicCore(bool enable_draw)
 	mNumUpdateSubsteps = 1;
 	mAlembicInputPath = "";
 	mAlembicOutputPath = "";
+	mMotionOutputPath = "";
+	mMotionOutputFrameRate = 60;
 	mPlaybackSpeed = 1;
 	mUpdatesPerSec = 0;
 }
@@ -65,6 +68,8 @@ void cDeepMimicCore::ParseArgs(const std::vector<std::string>& args)
 	mArgParser->ParseInt("num_update_substeps", mNumUpdateSubsteps);
 	mArgParser->ParseString("alembic_input_path", mAlembicInputPath);
 	mArgParser->ParseString("alembic_output_path", mAlembicOutputPath);
+	mArgParser->ParseString("motion_output_path", mMotionOutputPath);
+	mArgParser->ParseInt("motion_output_framerate", mMotionOutputFrameRate);
 }
 
 void cDeepMimicCore::Init()
@@ -237,16 +242,15 @@ Eigen::VectorXd deserializeVectorFromProperty(const Alembic::Abc::IObject& objec
 	return Eigen::VectorXd();
 }
 
-
-Eigen::Matrix<double, 4, 4> deserializeTransformFromProperty(const Alembic::Abc::IObject& object, const std::string& name)
+Eigen::Matrix<double, 4, 4> deserializeTransformFromProperty(const Alembic::Abc::IObject& object, const std::string& name, const int index = -1)
 {
-	auto xform = Alembic::AbcGeom::IXform(object, name);
+	auto schema = Alembic::AbcGeom::IXform(object, name).getSchema();
 
-	Alembic::AbcCoreAbstract::index_t lastIndex = xform.getSchema().getNumSamples() - 1;
-	auto sampler = Alembic::Abc::ISampleSelector(lastIndex);
+	Alembic::AbcCoreAbstract::index_t sampleIndex = (index == -1 ? schema.getNumSamples() - 1 : index);
+	auto sampler = Alembic::Abc::ISampleSelector(sampleIndex);
 
 	Alembic::AbcGeom::XformSample lastSample;
-	xform.getSchema().get(lastSample, sampler);
+	schema.get(lastSample, sampler);
 
 	return Eigen::Map<Eigen::Matrix<double, 4, 4, Eigen::ColMajor>>(lastSample.getMatrix().getValue());
 }
@@ -271,6 +275,108 @@ Eigen::Matrix<double,1,1> toVector(const double& val)
 Eigen::Vector4d toVector(const Eigen::Quaterniond& q)
 {
 	return Eigen::Vector4d(q.w(), q.x(), q.y(), q.z());
+}
+
+Eigen::VectorXd calculatePoseFromArchiveTransforms(
+		const Alembic::Abc::IArchive & archive,
+		std::shared_ptr<cSimCharacter> simCharacter,
+		const int index = -1)
+{
+
+	auto initialPose = simCharacter->GetPose0();
+
+	std::cout << " got initial pose" << std::endl;
+
+	for (int i = 0; i < std::size(jointNames); ++i)
+	{
+		auto& jointName = jointNames[i];
+		auto& jointType = jointTypes[i];
+		std::cout << " reading joint " << jointName << " as " << jointType << std::endl;
+		auto jointXform = deserializeTransformFromProperty(archive.getTop(), bonePrefix + jointNames[i], index);
+		auto jointPos = jointXform.block<3, 1>(0, 3);
+		auto jointR33 = jointXform.block<3, 3>(0, 0);
+		auto jointQ = Eigen::Quaterniond(jointR33);
+
+		if (jointType == "root")
+		{
+			//std::cout << " root pose: " << std::endl << jointPos << std::endl << toVector(jointQ) << std::endl;
+
+			initialPose.segment(0, 3) = jointPos;
+			initialPose.segment(3, 4) = toVector(jointQ);
+		}
+		else if (jointType == "spherical")
+		{
+			auto& parentName = jointNames[jointParents[i]];
+			auto parentXform = deserializeTransformFromProperty(archive.getTop(), bonePrefix + parentName, index);
+			auto parentR33 = parentXform.block<3, 3>(0, 0);
+			auto parentQ = Eigen::Quaterniond(parentR33);
+
+			auto diffQ = parentQ.inverse() * jointQ;
+
+			assignJointPose(simCharacter, i, toVector(diffQ), initialPose);
+
+			//std::cout << " " << jointName << " pose: " << std::endl << toVector(diffQ) << std::endl;
+		}
+		else if (jointType == "revolute")
+		{
+			auto parentXform = deserializeTransformFromProperty(archive.getTop(), bonePrefix + jointNames[i - 1], index);
+			auto childXform = deserializeTransformFromProperty(archive.getTop(), bonePrefix + jointNames[i + 1], index);
+
+			auto parentPos = parentXform.block<3, 1>(0, 3);
+			auto childPos = childXform.block<3, 1>(0, 3);
+
+			auto upDir = (parentPos - jointPos).normalized();
+			auto downDir = (childPos - jointPos).normalized();
+
+			auto diffAngle = std::acos(std::clamp(upDir.dot(downDir), -1.0, 1.0));
+
+			//std::cout << "DEBUG: " << jointName << std::endl \
+								<< " upDir:" << std::endl << upDir << std::endl \
+								<< " downDir:" << std::endl << downDir << std::endl \
+								<< " dot:" << upDir.dot(downDir) << std::endl << " diffAngle:" << diffAngle << std::endl;
+
+			if (jointName == "right_knee" || jointName == "left_knee")
+			{
+				diffAngle = diffAngle - M_PI;
+			}
+			else
+			{
+				diffAngle = M_PI - diffAngle;
+			}
+
+			assignJointPose(simCharacter, i, toVector(diffAngle), initialPose);
+
+			//std::cout << " " << jointName << " pose: " << std::endl << diffAngle << std::endl;
+		}
+		else
+		{
+			//std::cout << " " << jointNames[i] << " is fixed" << std::endl;
+		}
+
+	}
+
+	return initialPose;
+}
+
+Eigen::MatrixXd calculateMotionFromArchiveTransforms(
+		const Alembic::Abc::IArchive & archive,
+		std::shared_ptr<cSimCharacter> simCharacter,
+	    int motionFrameRate)
+{
+	constexpr int poseVectorDims = 43;
+	const float interFrameInterval = 1.0f / motionFrameRate;
+	auto numRootSamples = Alembic::AbcGeom::IXform(archive.getTop(), bonePrefix + "root").getSchema().getNumSamples();
+
+	Eigen::MatrixXd motionMatrix(numRootSamples, poseVectorDims + 1);
+	motionMatrix.leftCols(1) = Eigen::MatrixXd::Constant(numRootSamples, 1, interFrameInterval);
+
+	for (int i = 0; i < numRootSamples; ++i)
+	{
+		auto poseVector = calculatePoseFromArchiveTransforms(archive, simCharacter, i);
+		motionMatrix.block<1, poseVectorDims>(i, 1) = poseVector;
+	}
+
+	return motionMatrix;
 }
 
 void cDeepMimicCore::Reset()
@@ -335,130 +441,91 @@ void cDeepMimicCore::Reset()
 	mUpdatesPerSec = 0;
 
 	// read final pose from alembic
-	if (!mAlembicInputPath.empty())
+	if (mAlembicInputPath.empty())
 	{
-		std::cout << "cDeepMimicCore::Reset reading from " << mAlembicInputPath << std::endl;
+		return;
+	}
 
-		auto drawScene = std::dynamic_pointer_cast<cDrawSceneImitate>(mScene);
-		if (drawScene)
-		{
-			auto rlSimScene = dynamic_cast<cRLSceneSimChar*>(drawScene->GetRLScene());
-			if (rlSimScene)
-			{
-				auto archive = Alembic::Abc::IArchive(
-					Alembic::AbcCoreOgawa::ReadArchive(),
-					mAlembicInputPath,
-					Alembic::Abc::ErrorHandler::kThrowPolicy);
+	auto drawScene = std::dynamic_pointer_cast<cDrawSceneImitate>(mScene);
+	if (!drawScene)
+	{
+		std::cout << "cDeepMimicCore::Reset not in a draw scene. ignoring alembic_input_path" << std::endl;
+		return;
+	}
 
-				std::cout << " opened archive" << std::endl;
+	auto rlSimScene = dynamic_cast<cRLSceneSimChar*>(drawScene->GetRLScene());
+	if (!rlSimScene)
+	{
+		std::cout << "cDeepMimicCore::Reset not in a RL scene. ignoring alembic_input_path" << std::endl;
+		return;
+	}
 
+	auto simCharacter = rlSimScene->GetCharacter();
 
-				auto simCharacter = rlSimScene->GetCharacter();
-				auto initialPose = rlSimScene->GetCharacter()->GetPose0();
+	std::cout << "cDeepMimicCore::Reset reading from " << mAlembicInputPath << std::endl;
 
-				std::cout << " got initial pose" << std::endl;
+	auto archive = Alembic::Abc::IArchive(
+			Alembic::AbcCoreOgawa::ReadArchive(),
+			mAlembicInputPath,
+			Alembic::Abc::ErrorHandler::kThrowPolicy);
 
-				for (int i = 0; i < std::size(jointNames); ++i)
-				{
-					auto& jointName = jointNames[i];
-					auto& jointType = jointTypes[i];
-					std::cout << " reading joint " << jointName << " as " << jointType << std::endl;
-					auto jointXform = deserializeTransformFromProperty(archive.getTop(), bonePrefix + jointNames[i]);
-					auto jointPos = jointXform.block<3, 1>(0, 3);
-					auto jointR33 = jointXform.block<3, 3>(0, 0);
-					auto jointQ = Eigen::Quaterniond(jointR33);
+	std::cout << " opened archive " << std::endl;
 
-					if (jointType == "root")
-					{
-						//std::cout << " root pose: " << std::endl << jointPos << std::endl << toVector(jointQ) << std::endl;
-
-						initialPose.segment(0, 3) = jointPos;
-						initialPose.segment(3, 4) = toVector(jointQ);
-					}
-					else if (jointType == "spherical")
-					{
-						auto& parentName = jointNames[jointParents[i]];
-						auto parentXform = deserializeTransformFromProperty(archive.getTop(), bonePrefix + parentName);
-						auto parentR33 = parentXform.block<3, 3>(0, 0);
-						auto parentQ = Eigen::Quaterniond(parentR33);
-
-						auto diffQ = parentQ.inverse() * jointQ;
-
-						assignJointPose(simCharacter, i, toVector(diffQ), initialPose);
-
-						//std::cout << " " << jointName << " pose: " << std::endl << toVector(diffQ) << std::endl;
-					}
-					else if (jointType == "revolute")
-					{
-						auto parentXform = deserializeTransformFromProperty(archive.getTop(), bonePrefix + jointNames[i - 1]);
-						auto childXform = deserializeTransformFromProperty(archive.getTop(), bonePrefix + jointNames[i + 1]);
-
-						auto parentPos = parentXform.block<3, 1>(0, 3);
-						auto childPos = childXform.block<3, 1>(0, 3);
-
-						auto upDir = (parentPos - jointPos).normalized();
-						auto downDir = (childPos - jointPos).normalized();
-
-						auto diffAngle = std::acos(std::clamp(upDir.dot(downDir), -1.0, 1.0));
-
-						//std::cout << "DEBUG: " << jointName << std::endl \
-											<< " upDir:" << std::endl << upDir << std::endl \
-											<< " downDir:" << std::endl << downDir << std::endl \
-											<< " dot:" << upDir.dot(downDir) << std::endl << " diffAngle:" << diffAngle << std::endl;
-
-						if (jointName == "right_knee" || jointName == "left_knee")
-						{
-							diffAngle = diffAngle - M_PI;
-						}
-						else
-						{
-							diffAngle = M_PI - diffAngle;
-						}
-
-						assignJointPose(simCharacter, i, toVector(diffAngle), initialPose);
-
-						//std::cout << " " << jointName << " pose: " << std::endl << diffAngle << std::endl;
-					}
-					else
-					{
-						//std::cout << " " << jointNames[i] << " is fixed" << std::endl;
-					}
-
-				}
-
-				std::cout << "looking for last pose and velocity" << std::endl;
-
-				auto rootObject = Alembic::Abc::IObject(
+	auto rootObject = Alembic::Abc::IObject(
 					archive.getTop(),
 					simPrefix + "root",
 					Alembic::Abc::ErrorHandler::kQuietNoopPolicy);
 
+	std::cout << " found root " << rootObject << std::endl;
 
-				auto lastPoses = deserializeVectorFromProperty(rootObject, "pose");
-				auto lastVelocities = deserializeVectorFromProperty(rootObject, "vel");
+	if (!mMotionOutputPath.empty())
+	{
+		auto motionMatrix = calculateMotionFromArchiveTransforms(archive, simCharacter, mMotionOutputFrameRate);
+		std::cout << " motion matrix" << std::endl << motionMatrix << std::endl << std::endl;
 
-				if (lastPoses.size() && lastVelocities.size())
-				{
-					std::cout << "set last pose based on poses & velocities" << std::endl;
-					simCharacter->SetPose0(lastPoses);
-					simCharacter->SetVel0(lastVelocities);
-					simCharacter->SetPose(lastPoses);
-					simCharacter->SetVel(lastVelocities);
-				}
-				else
-				{
-					std::cout << "set initial pose based on alembic transforms alone" << std::endl;
+		Json::Value output;
+		output["Loop"] = "wrap";
 
-					std::cout << " before " << std::endl << simCharacter->GetPose0() << std::endl;
-					std::cout << " after " << std::endl << initialPose << std::endl;
-					
-					simCharacter->SetPose0(initialPose);
-					simCharacter->SetPose(initialPose);
-					simCharacter->SetVel(simCharacter->GetVel0());
-				}
-
+		for (int y = 0; y < motionMatrix.rows(); ++y)
+		{
+			for (int x = 0; x < motionMatrix.cols(); ++x)
+			{
+				output["Frames"][y][x] = Json::Value(motionMatrix(y, x));
 			}
 		}
+
+		Json::StyledStreamWriter writer;
+		std::ofstream motionFile(mMotionOutputPath);
+		writer.write(motionFile, output);
+		motionFile.close();
+
+		exit(0);
+	}
+
+	auto lastPoses = deserializeVectorFromProperty(rootObject, "pose");
+	auto lastVelocities = deserializeVectorFromProperty(rootObject, "vel");
+
+	if (lastPoses.size() && lastVelocities.size())
+	{
+		std::cout << "set last pose based on poses & velocities" << std::endl;
+		simCharacter->SetPose0(lastPoses);
+		simCharacter->SetVel0(lastVelocities);
+		simCharacter->SetPose(lastPoses);
+		simCharacter->SetVel(lastVelocities);
+	}
+	else
+	{
+		std::cout << "set initial pose based on alembic transforms alone" << std::endl;
+
+		auto currentPose = simCharacter->GetPose0();
+		std::cout << " before " << std::endl << simCharacter->GetPose0() << std::endl;
+
+		auto transformDefinedPose = calculatePoseFromArchiveTransforms(archive, simCharacter);
+		std::cout << " after " << std::endl << transformDefinedPose << std::endl;
+
+		simCharacter->SetPose0(transformDefinedPose);
+		simCharacter->SetPose(transformDefinedPose);
+		simCharacter->SetVel(simCharacter->GetVel0());
 	}
 }
 

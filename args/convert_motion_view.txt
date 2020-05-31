@@ -1,0 +1,4 @@
+--scene kin_char
+
+--character_file data/characters/humanoid3d.txt
+--motion_file data/motions/viborg_rig_nd_13_lieForAlembicBakeNulls_04_481frames.txt
