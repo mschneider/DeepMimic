@@ -11,7 +11,7 @@ public:
 		EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 		eType mType;
-		double mMass;
+		double mDensity;
 		double mFriction;
 		bool mUseQuantizedAabbCompression;
 

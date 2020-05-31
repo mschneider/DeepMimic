@@ -7,7 +7,7 @@
 cSimRigidMesh::tParams::tParams()
 {
 	mType = eTypeDynamic;
-	mMass = 1;
+	mDensity = 1;
 	mFriction = 0.5;
 	mUseQuantizedAabbCompression = false;
 
@@ -37,7 +37,6 @@ void cSimRigidMesh::Init(const std::shared_ptr<cWorld>& world, const tParams& pa
 {
 	mType = params.mType;
 
-	btScalar mass = (params.mType == eTypeDynamic) ? static_cast<btScalar>(params.mMass) : 0;
 
 	mVertices = params.mVertices;
 	mIndizes = params.mIndizes;
@@ -103,7 +102,6 @@ void cSimRigidMesh::Init(const std::shared_ptr<cWorld>& world, const tParams& pa
 
 	// scale vertex buffer by world scale
 	std::vector<btScalar> scaledVertices;
-
 	for (auto & vertex : mVertices)
 	{
 		scaledVertices.push_back(vertex * world->GetScale());
@@ -111,6 +109,13 @@ void cSimRigidMesh::Init(const std::shared_ptr<cWorld>& world, const tParams& pa
 
 	auto convexHull = new btConvexHullShape(scaledVertices.data(), scaledVertices.size() / 3, sizeof(btScalar) * 3);
 	mColShape = std::unique_ptr<btCollisionShape>(convexHull);
+
+	btVector3 aabbMin, aabbMax;
+	mColShape->getAabb(btTransform::getIdentity(), aabbMin, aabbMax);
+
+	auto volume = (aabbMax - aabbMin).length2();
+	auto density = (params.mType == eTypeDynamic) ? static_cast<btScalar>(params.mDensity) : 0;
+	auto mass = volume * density;
 
 	// debug convex hull
 	/*
@@ -160,14 +165,6 @@ void cSimRigidMesh::Init(const std::shared_ptr<cWorld>& world, const tParams& pa
 		if (i % 4 == 3)
 			std::cout << std::endl;
 	}
-
-
-	// debug AABB
-
-	tVector3 aabbMin, aabbMax;
-	CalcAABB(aabbMin, aabbMax);
-
-	std::cout << "AABB: [" << aabbMin.x() << " - " << aabbMax.x() << " ] [" << aabbMin.y() << " - " << aabbMax.y() << "] [" << aabbMin.z() << " - " << aabbMax.z() << "]" << std::endl;
 }
 
 tVector cSimRigidMesh::GetSize() const
